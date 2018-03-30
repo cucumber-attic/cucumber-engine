@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/cucumber/cucumber-pickle-runner
+    docker:
+      - image: circleci/golang:1.10
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - vendor-{{ checksum "glide.lock" }}
+      - run: make setup
+      - save_cache:
+          key: vendor-{{ checksum "glide.lock" }}
+          paths:
+            - vendor
+            - ~/.glide
+      - run: make spec
