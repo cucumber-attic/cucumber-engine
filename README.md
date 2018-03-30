@@ -1,17 +1,10 @@
-# cucumber-pickle-runner
+# Cucumber Pickle Runner
 
 Shared go binary that can be used by all language implementations.
 
 It takes care of loading the features, filtering the pickles, and orchestrating the test run. It defers running the hooks / steps to the caller. Its primary output is events that conform to the event protocol.
 
-# Setup
-
-```
-glide install
-go get github.com/onsi/ginkgo/ginkgo
-```
-
-# Usage
+## Usage
 
 * Ensure you have downloaded the proper executable for the user's machine.
 * Run the executable
@@ -25,3 +18,13 @@ go get github.com/onsi/ginkgo/ginkgo
     * Run after test case hooks
     * Run after test run hooks
   * The program will also send [event](./docs/commands/event.md) commands
+
+## Development
+
+#### Setup
+
+* `make setup`
+
+#### Run linter / tests
+
+* `make spec`
