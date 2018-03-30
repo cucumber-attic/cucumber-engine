@@ -1,0 +1,6 @@
+package: github.com/cucumber/cucumber-pickle-runner
+import:
+- package: github.com/cucumber/gherkin-go
+  version: v5.0.0
+- package: github.com/satori/go.uuid
+  version: v1.2.0
