@@ -87,6 +87,12 @@ This command should be sent from the calling program immediately
 
         // array of regexp sources
         "regexps": [],
+
+        // whether or not this is the preferred parameter type for regular expressions
+        "preferForRegexpMatch": false,
+
+        // whether or not to use this when suggesting snippets
+        "useForSnippets": false,
       }
       // ...
     ]

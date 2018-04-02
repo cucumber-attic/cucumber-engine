@@ -26,9 +26,9 @@ type Command struct {
 	TestCaseHookDefinitionID string `json:"testCaseHookDefinitionId"`
 
 	// Used for type "run test step"
-	TestStepDefinitionID string             `json:"testStepDefinitionId"`
-	PatternMatches       []*PatternMatch    `json:"patternMatches"`
-	Arguments            []gherkin.Argument `json:"arguments"`
+	StepDefinitionID string             `json:"stepDefinitionId"`
+	PatternMatches   []*PatternMatch    `json:"patternMatches"`
+	Arguments        []gherkin.Argument `json:"arguments"`
 
 	// Used for type "event"
 	Event interface{} `json:"event"`

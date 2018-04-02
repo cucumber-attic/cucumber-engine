@@ -10,7 +10,7 @@ This command is sent by the program asking the caller to run a test step. Once c
   "testCaseId": "",
 
   // id of the step to run
-  "testStepDefinitionId": "",
+  "stepDefinitionId": "",
 
   // captures groups
   "patternCaptureGroups": [

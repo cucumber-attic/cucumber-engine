@@ -172,9 +172,9 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 	// TODO don't run a before hook if the test case result status is skipped
 	return func() *dto.TestResult {
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
-			Type:           dto.CommandTypeRunBeforeTestCaseHook,
-			TestCaseID:     t.id,
-			TestCaseHookID: hook.ID,
+			Type:                     dto.CommandTypeRunBeforeTestCaseHook,
+			TestCaseID:               t.id,
+			TestCaseHookDefinitionID: hook.ID,
 		})
 		return response.HookOrStepResult
 	}
@@ -190,7 +190,8 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
 			Type:       dto.CommandTypeRunTestStep,
 			TestCaseID: t.id,
-			Arguments:  step.Arguments,
+			// StepDefinitionID: t.stepIndexToStepDefinitions[stepIndex][0].ID,
+			Arguments: step.Arguments,
 		})
 		return response.HookOrStepResult
 	}
