@@ -1,6 +1,7 @@
 package runner_test
 
 import (
+	"fmt"
 	"path"
 	"runtime"
 
@@ -22,19 +23,27 @@ var _ = Describe("Runner", func() {
 
 		It("all steps are undefined", func() {
 			allCommandsSent := []*dto.Command{}
-			var r *runner.Runner
-			r = runner.NewRunner(func(command *dto.Command) {
-				// fmt.Printf("%+v\n", command)
-				allCommandsSent = append(allCommandsSent, command)
-				switch command.Type {
-				case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
-					r.ReceiveCommand(&dto.Command{
-						Type:       dto.CommandTypeActionComplete,
-						ResponseTo: command.ID,
-					})
+			r := runner.NewRunner()
+			incoming, outgoing := r.GetCommandChannels()
+			done := make(chan bool)
+			go func() {
+				for command := range outgoing {
+					fmt.Printf("test %+v\n", command)
+					if command.Type == dto.CommandTypeEvent {
+						fmt.Printf("test %+v\n", command.Event)
+					}
+					allCommandsSent = append(allCommandsSent, command)
+					switch command.Type {
+					case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
+						incoming <- &dto.Command{
+							Type:       dto.CommandTypeActionComplete,
+							ResponseTo: command.ID,
+						}
+					}
 				}
-			})
-			r.ReceiveCommand(&dto.Command{
+				done <- true
+			}()
+			incoming <- &dto.Command{
 				Type: dto.CommandTypeStart,
 				FeaturesConfig: &dto.FeaturesConfig{
 					AbsolutePaths: []string{featurePath},
@@ -44,7 +53,8 @@ var _ = Describe("Runner", func() {
 					AfterTestCaseHookDefinitions:  []*dto.TestCaseHookDefinition{},
 					StepDefinitions:               []*dto.StepDefinition{},
 				},
-			})
+			}
+			<-done
 			Expect(allCommandsSent).To(HaveLen(17))
 			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
 			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))

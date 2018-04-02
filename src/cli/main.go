@@ -10,13 +10,19 @@ import (
 )
 
 func main() {
-	r := runner.NewRunner(func(command *dto.Command) {
-		data, err := json.Marshal(command)
-		if err != nil {
-			panic(err)
+	r := runner.NewRunner()
+	incoming, outgoing := r.GetCommandChannels()
+	done := make(chan bool)
+	go func() {
+		for command := range outgoing {
+			data, err := json.Marshal(command)
+			if err != nil {
+				panic(err)
+			}
+			os.Stdout.Write(data)
 		}
-		os.Stdout.Write(data)
-	})
+		done <- true
+	}()
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		command := dto.Command{}
@@ -24,9 +30,10 @@ func main() {
 		if err := json.Unmarshal(data, command); err != nil {
 			panic(err)
 		}
-		r.ReceiveCommand(&command)
+		incoming <- &command
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
+	<-done
 }

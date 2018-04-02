@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"fmt"
+
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
@@ -9,7 +11,8 @@ import (
 
 // Runner executes a run of cucumber
 type Runner struct {
-	sendCommand      func(*dto.Command)
+	incomingCommands chan *dto.Command
+	outgoingCommands chan *dto.Command
 	runtimeConfig    *dto.RuntimeConfig
 	pickleEvents     []*gherkin.PickleEvent
 	testCaseRunner   *TestCaseRunner
@@ -17,15 +20,27 @@ type Runner struct {
 }
 
 // NewRunner creates a runner
-func NewRunner(sendCommand func(*dto.Command)) *Runner {
-	return &Runner{
-		sendCommand:      sendCommand,
+func NewRunner() *Runner {
+	r := &Runner{
+		incomingCommands: make(chan *dto.Command),
+		outgoingCommands: make(chan *dto.Command),
 		responseChannels: map[string]chan *dto.Command{},
 	}
+	go func() {
+		for command := range r.incomingCommands {
+			fmt.Printf("source %+v\n", command)
+			go r.receiveCommand(command)
+		}
+	}()
+	return r
 }
 
-// ReceiveCommand receives a command
-func (r *Runner) ReceiveCommand(command *dto.Command) {
+// GetCommandChannels returns the command channels
+func (r *Runner) GetCommandChannels() (chan *dto.Command, chan *dto.Command) {
+	return r.incomingCommands, r.outgoingCommands
+}
+
+func (r *Runner) receiveCommand(command *dto.Command) {
 	if command.Type == "start" {
 		r.runtimeConfig = command.RuntimeConfig
 		r.start(command.FeaturesConfig)
@@ -34,6 +49,10 @@ func (r *Runner) ReceiveCommand(command *dto.Command) {
 	if responseChannel, ok := r.responseChannels[command.ResponseTo]; ok {
 		responseChannel <- command
 	}
+}
+
+func (r *Runner) sendCommand(command *dto.Command) {
+	r.outgoingCommands <- command
 }
 
 func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
@@ -76,6 +95,7 @@ func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
 		Type:  "event",
 		Event: event.NewTestRunFinished(success),
 	})
+	close(r.outgoingCommands)
 }
 
 func (r *Runner) sendCommandAndAwaitResponse(command *dto.Command) *dto.Command {
