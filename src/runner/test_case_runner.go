@@ -202,7 +202,7 @@ func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNam
 	for _, hookDefinition := range hookDefinitions {
 		tagExpression, err := tagexpressions.Parse(hookDefinition.TagExpression)
 		if err != nil {
-			panic(err)
+			panic(err) // TODO remove as will have a validated hook definition where the tag expression is already parsed
 		}
 		if tagExpression.Evaluate(tagNames) {
 			result = append(result, hookDefinition)
