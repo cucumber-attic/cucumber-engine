@@ -8,14 +8,14 @@ import (
 
 // TestCaseStarted is an event for when a test case starts running
 type TestCaseStarted struct {
-	SourceLocation Location `json:"source_location"`
+	SourceLocation *Location
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestCaseStarted) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		SourceLocation Location `json:"sourceLocation"`
-		Type           string   `json:"type"`
+		SourceLocation *Location `json:"sourceLocation"`
+		Type           string    `json:"type"`
 	}{
 		SourceLocation: t.SourceLocation,
 		Type:           "test-case-finished",

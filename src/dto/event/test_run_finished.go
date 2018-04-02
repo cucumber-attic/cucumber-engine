@@ -4,7 +4,7 @@ import "encoding/json"
 
 // TestRunFinished is an event for when the test run finishes
 type TestRunFinished struct {
-	Success bool `json:"success"`
+	Success bool
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type

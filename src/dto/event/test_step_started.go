@@ -8,8 +8,8 @@ import (
 
 // TestStepStarted is an event for when a test step starts running
 type TestStepStarted struct {
-	Index    int      `json:"index"`
-	TestCase TestCase `json:"testCase"`
+	Index    int
+	TestCase TestCase
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type

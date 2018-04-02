@@ -3,9 +3,7 @@ package event
 import "encoding/json"
 
 // TestRunStarted is an event for when the test run starts
-type TestRunStarted struct {
-	Type string `json:"type"`
-}
+type TestRunStarted struct{}
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestRunStarted) MarshalJSON() ([]byte, error) {

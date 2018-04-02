@@ -17,7 +17,7 @@ var _ = Describe("NewTestCasePrepared", func() {
 				},
 				URI: "a.feature",
 			})
-			Expect(testCasePrepared.SourceLocation).To(Equal(event.Location{URI: "a.feature", Line: 1}))
+			Expect(testCasePrepared.SourceLocation).To(Equal(&event.Location{URI: "a.feature", Line: 1}))
 			Expect(testCasePrepared.Steps).To(BeEmpty())
 		})
 	})
@@ -36,9 +36,9 @@ var _ = Describe("NewTestCasePrepared", func() {
 				},
 				URI: "a.feature",
 			})
-			Expect(testCasePrepared.SourceLocation).To(Equal(event.Location{URI: "a.feature", Line: 1}))
-			Expect(testCasePrepared.Steps).To(Equal([]event.TestCasePreparedStep{
-				{SourceLocation: event.Location{URI: "a.feature", Line: 2}},
+			Expect(testCasePrepared.SourceLocation).To(Equal(&event.Location{URI: "a.feature", Line: 1}))
+			Expect(testCasePrepared.Steps).To(Equal([]*event.TestCasePreparedStep{
+				{SourceLocation: &event.Location{URI: "a.feature", Line: 2}},
 			}))
 		})
 	})
@@ -59,11 +59,11 @@ var _ = Describe("NewTestCasePrepared", func() {
 				},
 				URI: "a.feature",
 			})
-			Expect(testCasePrepared.SourceLocation).To(Equal(event.Location{URI: "a.feature", Line: 1}))
-			Expect(testCasePrepared.Steps).To(Equal([]event.TestCasePreparedStep{
+			Expect(testCasePrepared.SourceLocation).To(Equal(&event.Location{URI: "a.feature", Line: 1}))
+			Expect(testCasePrepared.Steps).To(Equal([]*event.TestCasePreparedStep{
 				{
-					SourceLocation: event.Location{URI: "a.feature", Line: 2},
-					ActionLocation: event.Location{URI: "steps.js", Line: 3},
+					SourceLocation: &event.Location{URI: "a.feature", Line: 2},
+					ActionLocation: &event.Location{URI: "steps.js", Line: 3},
 				},
 			}))
 		})
@@ -86,10 +86,10 @@ var _ = Describe("NewTestCasePrepared", func() {
 				},
 				URI: "a.feature",
 			})
-			Expect(testCasePrepared.SourceLocation).To(Equal(event.Location{URI: "a.feature", Line: 1}))
-			Expect(testCasePrepared.Steps).To(Equal([]event.TestCasePreparedStep{
+			Expect(testCasePrepared.SourceLocation).To(Equal(&event.Location{URI: "a.feature", Line: 1}))
+			Expect(testCasePrepared.Steps).To(Equal([]*event.TestCasePreparedStep{
 				{
-					SourceLocation: event.Location{URI: "a.feature", Line: 2},
+					SourceLocation: &event.Location{URI: "a.feature", Line: 2},
 				},
 			}))
 		})
@@ -115,17 +115,17 @@ var _ = Describe("NewTestCasePrepared", func() {
 				},
 				URI: "a.feature",
 			})
-			Expect(testCasePrepared.SourceLocation).To(Equal(event.Location{URI: "a.feature", Line: 1}))
-			Expect(testCasePrepared.Steps).To(Equal([]event.TestCasePreparedStep{
+			Expect(testCasePrepared.SourceLocation).To(Equal(&event.Location{URI: "a.feature", Line: 1}))
+			Expect(testCasePrepared.Steps).To(Equal([]*event.TestCasePreparedStep{
 				{
-					ActionLocation: event.Location{URI: "steps.js", Line: 10},
+					ActionLocation: &event.Location{URI: "steps.js", Line: 10},
 				},
 				{
-					ActionLocation: event.Location{URI: "steps.js", Line: 3},
-					SourceLocation: event.Location{URI: "a.feature", Line: 2},
+					ActionLocation: &event.Location{URI: "steps.js", Line: 3},
+					SourceLocation: &event.Location{URI: "a.feature", Line: 2},
 				},
 				{
-					ActionLocation: event.Location{URI: "steps.js", Line: 11},
+					ActionLocation: &event.Location{URI: "steps.js", Line: 11},
 				},
 			}))
 		})

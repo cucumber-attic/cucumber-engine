@@ -4,6 +4,7 @@ import (
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
+	tagexpressions "github.com/cucumber/tag-expressions-go"
 )
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
@@ -37,14 +38,17 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
 	// 	// TODO lookup matching step definitions
 	// 	stepIndexToStepDefinitions[i] = []*dto.StepDefinition{}
 	// }
-	// TODO filter hook defs by tags
+	tagNames := make([]string, len(opts.Pickle.Tags))
+	for i, tag := range opts.Pickle.Tags {
+		tagNames[i] = tag.Name
+	}
 	return &TestCaseRunner{
 		pickle:                        opts.Pickle,
 		uri:                           opts.URI,
 		sendCommand:                   opts.SendCommand,
 		sendCommandAndAwaitResponse:   opts.SendCommandAndAwaitResponse,
-		beforeTestCaseHookDefinitions: opts.BeforeTestCaseHookDefinitions,
-		afterTestCaseHookDefinitions:  opts.AfterTestCaseHookDefinitions,
+		beforeTestCaseHookDefinitions: filterHookDefinitions(opts.BeforeTestCaseHookDefinitions, tagNames),
+		afterTestCaseHookDefinitions:  filterHookDefinitions(opts.AfterTestCaseHookDefinitions, tagNames),
 		stepIndexToStepDefinitions:    stepIndexToStepDefinitions,
 		result: &dto.TestResult{
 			Duration: 0,
@@ -182,4 +186,18 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 		})
 		return response.HookOrStepResult
 	}
+}
+
+func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
+	result := []*dto.TestCaseHookDefinition{}
+	for _, hookDefinition := range hookDefinitions {
+		tagExpression, err := tagexpressions.Parse(hookDefinition.TagExpression)
+		if err != nil {
+			panic(err)
+		}
+		if tagExpression.Evaluate(tagNames) {
+			result = append(result, hookDefinition)
+		}
+	}
+	return result
 }

@@ -9,15 +9,15 @@ import (
 
 // TestCaseFinished is an event for when a test case finishes running
 type TestCaseFinished struct {
-	Result         *dto.TestResult `json:"result"`
-	SourceLocation Location        `json:"source_location"`
+	Result         *dto.TestResult
+	SourceLocation *Location
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestCaseFinished) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Result         *dto.TestResult `json:"result"`
-		SourceLocation Location        `json:"source_location"`
+		SourceLocation *Location       `json:"sourceLocation"`
 		Type           string          `json:"type"`
 	}{
 		Result:         t.Result,

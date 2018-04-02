@@ -9,9 +9,9 @@ import (
 
 // TestStepFinished is an event for when a test step finishes running
 type TestStepFinished struct {
-	Index    int             `json:"index"`
-	Result   *dto.TestResult `json:"result"`
-	TestCase TestCase        `json:"testCase"`
+	Index    int
+	Result   *dto.TestResult
+	TestCase TestCase
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
