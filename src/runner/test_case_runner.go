@@ -197,7 +197,7 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 	}
 }
 
-func (t *TestCaseRunner) filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
+func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
 	result := []*dto.TestCaseHookDefinition{}
 	for _, hookDefinition := range hookDefinitions {
 		tagExpression, err := tagexpressions.Parse(hookDefinition.TagExpression)
