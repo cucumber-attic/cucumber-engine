@@ -4,3 +4,4 @@ import:
   version: v5.0.0
 - package: github.com/satori/go.uuid
   version: v1.2.0
+- package: github.com/cucumber/tag-expressions-go

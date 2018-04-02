@@ -87,7 +87,7 @@ func (r *Runner) sendCommandAndAwaitResponse(command *dto.Command) *dto.Command 
 	return <-responseChannel
 }
 
-func (r *Runner) shouldCauseFailure(status string) bool {
+func (r *Runner) shouldCauseFailure(status dto.Status) bool {
 	return status == dto.StatusAmbiguous ||
 		status == dto.StatusFailed ||
 		status == dto.StatusUndefined ||

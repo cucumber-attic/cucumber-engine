@@ -1,17 +1,20 @@
 package dto
 
+// Status is an enumeration of the available values for the Status field in the TestResult struct
+type Status string
+
 var (
 	// StatusAmbiguous is the status for a step with multiple definitions
-	StatusAmbiguous = "ambiguous"
+	StatusAmbiguous = Status("ambiguous")
 	// StatusFailed is the status for a hook/step that failed
-	StatusFailed = "failed"
+	StatusFailed = Status("failed")
 	// StatusPassed is the status for a hook/step that passod
-	StatusPassed = "passed"
+	StatusPassed = Status("passed")
 	// StatusPending is the status for a step with an incomplete definition
-	StatusPending = "pending"
+	StatusPending = Status("pending")
 	// StatusSkipped is the status for a hook/step that is skipped deliberately
 	// to cause the scenarin to be skipped or there was a previous error
-	StatusSkipped = "skipped"
+	StatusSkipped = Status("skipped")
 	// StatusUndefined is the status for a step without a definition
-	StatusUndefined = "undefined"
+	StatusUndefined = Status("undefined")
 )

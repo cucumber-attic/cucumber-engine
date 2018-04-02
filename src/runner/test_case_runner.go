@@ -48,7 +48,7 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
 		stepIndexToStepDefinitions:    stepIndexToStepDefinitions,
 		result: &dto.TestResult{
 			Duration: 0,
-			Status:   "passed",
+			Status:   dto.StatusPassed,
 		},
 	}
 }
