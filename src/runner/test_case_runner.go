@@ -197,12 +197,12 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 	}
 }
 
-func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
+func (t *TestCaseRunner) filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
 	result := []*dto.TestCaseHookDefinition{}
 	for _, hookDefinition := range hookDefinitions {
 		tagExpression, err := tagexpressions.Parse(hookDefinition.TagExpression)
 		if err != nil {
-			panic(err)
+			panic(err) // TODO remove as will have a validated hook definition where the tag expression is already parsed
 		}
 		if tagExpression.Evaluate(tagNames) {
 			result = append(result, hookDefinition)
