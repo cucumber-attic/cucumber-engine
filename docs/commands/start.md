@@ -9,7 +9,7 @@ This command should be sent from the calling program immediately
   "featuresConfig": {
 
     // array of paths to features that need to be loaded
-    "absolute_paths": [],
+    "absolutePaths": [],
 
     // filters to select specific scenarios to run
     "filters": {
@@ -20,7 +20,7 @@ This command should be sent from the calling program immediately
       "names": [],
 
       // tag expression for what scenarios should run on
-      "tag_expression": "",
+      "tagExpression": "",
 
       // map from feature path to array of line numbers for what scenarios to run
       "lines": {
@@ -33,22 +33,22 @@ This command should be sent from the calling program immediately
   "runtimeConfig": {
 
     // if true, after the first failure, the remaining scenarios are skipped
-    "is_fail_fast": false,
+    "isFailFast": false,
 
     // if true, do not run any steps
-    "is_dry_run": false,
+    "isDryRun": false,
 
     // if true, pending steps cause the test run to fail
-    "is_strict": false,
+    "isStrict": false,
 
     // hooks to run before each test case
-    "before_test_case_hook_definitions": [
+    "beforeTestCaseHookDefinitions": [
       {
         // a unique id for the before hook
         "id": "",
 
         // tag expression for what scenarios this hook should run on
-        "tag_expression": "",
+        "tagExpression": "",
 
         // uri / line for where the hook was defined (optional)
         "uri": "",
@@ -57,10 +57,10 @@ This command should be sent from the calling program immediately
       // ...
     ],
 
-    // hooks to run after each test case (same format as before_test_case_hook_definitions)
-    "after_test_case_hook_definitions": [],
+    // hooks to run after each test case (same format as beforeTestCaseHookDefinitions)
+    "afterTestCaseHookDefinitions": [],
 
-    "step_definitions": [
+    "stepDefinitions": [
       {
 
         // a unique id for the step

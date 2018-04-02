@@ -21,7 +21,7 @@ type Command struct {
 	RuntimeConfig  *RuntimeConfig  `json:"runtimeConfig"`
 
 	// Used for type "run before/after test case hook"
-	TestCaseHookID string `json:"testCaseHookid"`
+	TestCaseHookID string `json:"testCaseHookId"`
 
 	// Used for type "run test step"
 	TestStep *gherkin.PickleStep `json:"testStep"`
