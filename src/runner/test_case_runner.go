@@ -5,6 +5,7 @@ import (
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
 	tagexpressions "github.com/cucumber/tag-expressions-go"
+	uuid "github.com/satori/go.uuid"
 )
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
@@ -22,6 +23,7 @@ type NewTestCaseRunnerOptions struct {
 type TestCaseRunner struct {
 	afterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
 	beforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
+	id                            string
 	pickle                        *gherkin.Pickle
 	sendCommand                   func(*dto.Command)
 	sendCommandAndAwaitResponse   func(*dto.Command) *dto.Command
@@ -43,17 +45,18 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
 		tagNames[i] = tag.Name
 	}
 	return &TestCaseRunner{
-		pickle:                        opts.Pickle,
-		uri:                           opts.URI,
-		sendCommand:                   opts.SendCommand,
-		sendCommandAndAwaitResponse:   opts.SendCommandAndAwaitResponse,
-		beforeTestCaseHookDefinitions: filterHookDefinitions(opts.BeforeTestCaseHookDefinitions, tagNames),
 		afterTestCaseHookDefinitions:  filterHookDefinitions(opts.AfterTestCaseHookDefinitions, tagNames),
-		stepIndexToStepDefinitions:    stepIndexToStepDefinitions,
+		beforeTestCaseHookDefinitions: filterHookDefinitions(opts.BeforeTestCaseHookDefinitions, tagNames),
+		id:     uuid.NewV4().String(),
+		pickle: opts.Pickle,
 		result: &dto.TestResult{
 			Duration: 0,
 			Status:   dto.StatusPassed,
 		},
+		sendCommand:                 opts.SendCommand,
+		sendCommandAndAwaitResponse: opts.SendCommandAndAwaitResponse,
+		stepIndexToStepDefinitions:  stepIndexToStepDefinitions,
+		uri: opts.URI,
 	}
 }
 
@@ -61,7 +64,10 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
 func (t *TestCaseRunner) Run() *dto.TestResult {
 	t.sendTestCasePreparedEvent()
 	t.sendTestCaseStartedEvent()
-	t.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeInitializeTestCase})
+	t.sendCommandAndAwaitResponse(&dto.Command{
+		Type:       dto.CommandTypeInitializeTestCase,
+		TestCaseID: t.id,
+	})
 	for index, runHookOrStepFunc := range t.getRunHookAndStepFuncs() {
 		t.sendTestStepStartedEvent(index)
 		hookOrStepResult := runHookOrStepFunc()
@@ -167,6 +173,7 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 	return func() *dto.TestResult {
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
 			Type:           dto.CommandTypeRunBeforeTestCaseHook,
+			TestCaseID:     t.id,
 			TestCaseHookID: hook.ID,
 		})
 		return response.HookOrStepResult
@@ -181,8 +188,9 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 		// TODO don't run the step if ambiguous
 		// TODO don't run the step if test case result status isnt passed
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
-			Type:     dto.CommandTypeRunTestStep,
-			TestStep: step,
+			Type:       dto.CommandTypeRunTestStep,
+			TestCaseID: t.id,
+			Arguments:  step.Arguments,
 		})
 		return response.HookOrStepResult
 	}

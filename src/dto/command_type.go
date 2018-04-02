@@ -24,5 +24,5 @@ const (
 	// CommandTypeEvent is sent when an event occurs
 	CommandTypeEvent = CommandType("event")
 	// CommandTypeError is sent when an error occurs
-	CommandTypeError = CommandType("action_complete")
+	CommandTypeError = CommandType("error")
 )

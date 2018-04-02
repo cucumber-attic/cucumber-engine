@@ -11,12 +11,12 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
   * The program can be interfaced with newline delimited json over stdin / stdout.
   * The program should be sent a [start](./docs/commands/start.md)
   * The program will then send commands for the caller to complete. The caller should send a [response](./docs/commands/action_complete.md) once the action is complete.
-    * Run before test run hooks
-    * Initialize test case
-    * Run before test case hooks
-    * Run step
-    * Run after test case hooks
-    * Run after test run hooks
+    * [Run before test run hooks](./docs/commands/run_test_run_hooks.md)
+    * [Initialize test case](./docs/commands/initialize_test_case.md)
+    * [Run before test case hooks](./docs/commands/run_test_case_hook.md)
+    * [Run test step](./docs/commands/run_test_step.md)
+    * [Run after test case hooks](./docs/commands/run_test_case_hook.md)
+    * [Run after test run hooks](./docs/commands/run_test_run_hooks.md)
   * The program will also send [event](./docs/commands/event.md) commands
 
 ## Development
