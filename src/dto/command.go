@@ -32,4 +32,7 @@ type Command struct {
 
 	// Used for type "event"
 	Event interface{} `json:"event"`
+
+	// Used for type "error"
+	Error string `json:"error"`
 }

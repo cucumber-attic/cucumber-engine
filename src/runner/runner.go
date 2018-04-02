@@ -7,8 +7,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// TODO create error channel to avoid panics
-
 // Runner executes a run of cucumber
 type Runner struct {
 	incomingCommands chan *dto.Command
@@ -57,11 +55,19 @@ func (r *Runner) sendCommand(command *dto.Command) {
 func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
 	pickleFilter, err := NewPickleFilter(featuresConfig.Filters)
 	if err != nil {
-		panic(err)
+		r.sendCommand(&dto.Command{
+			Type:  dto.CommandTypeError,
+			Error: err.Error(),
+		})
+		return
 	}
 	gherkinEvents, err := gherkin.GherkinEvents(featuresConfig.AbsolutePaths...)
 	if err != nil {
-		panic(err)
+		r.sendCommand(&dto.Command{
+			Type:  dto.CommandTypeError,
+			Error: err.Error(),
+		})
+		return
 	}
 	for _, gherkinEvent := range gherkinEvents {
 		r.sendCommand(&dto.Command{
