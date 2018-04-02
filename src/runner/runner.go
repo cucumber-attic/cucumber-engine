@@ -1,13 +1,13 @@
 package runner
 
 import (
-	"fmt"
-
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
 	uuid "github.com/satori/go.uuid"
 )
+
+// TODO create error channel to avoid panics
 
 // Runner executes a run of cucumber
 type Runner struct {
@@ -28,7 +28,6 @@ func NewRunner() *Runner {
 	}
 	go func() {
 		for command := range r.incomingCommands {
-			fmt.Printf("source %+v\n", command)
 			go r.receiveCommand(command)
 		}
 	}()
@@ -56,18 +55,32 @@ func (r *Runner) sendCommand(command *dto.Command) {
 }
 
 func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
-	events, err := gherkin.GherkinEvents(featuresConfig.AbsolutePaths...)
+	pickleFilter, err := NewPickleFilter(featuresConfig.Filters)
 	if err != nil {
 		panic(err)
 	}
-	for _, event := range events {
+	gherkinEvents, err := gherkin.GherkinEvents(featuresConfig.AbsolutePaths...)
+	if err != nil {
+		panic(err)
+	}
+	for _, gherkinEvent := range gherkinEvents {
 		r.sendCommand(&dto.Command{
 			Type:  "event",
-			Event: event,
+			Event: gherkinEvent,
 		})
-		if pickleEvent, ok := event.(*gherkin.PickleEvent); ok {
-			// TODO filter
-			r.pickleEvents = append(r.pickleEvents, pickleEvent)
+		if pickleEvent, ok := gherkinEvent.(*gherkin.PickleEvent); ok {
+			if pickleFilter.Matches(pickleEvent) {
+				r.sendCommand(&dto.Command{
+					Type:  "event",
+					Event: event.NewPickleAccepted(pickleEvent),
+				})
+				r.pickleEvents = append(r.pickleEvents, pickleEvent)
+			} else {
+				r.sendCommand(&dto.Command{
+					Type:  "event",
+					Event: event.NewPickleRejected(pickleEvent),
+				})
+			}
 		}
 	}
 	r.sendCommand(&dto.Command{
@@ -75,7 +88,9 @@ func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
 		Event: event.NewTestRunStarted(),
 	})
 	success := true
-	_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunBeforeTestRunHooks})
+	if len(r.pickleEvents) > 0 {
+		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunBeforeTestRunHooks})
+	}
 	for _, pickleEvent := range r.pickleEvents {
 		r.testCaseRunner = NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			AfterTestCaseHookDefinitions:  r.runtimeConfig.AfterTestCaseHookDefinitions,
@@ -90,7 +105,9 @@ func (r *Runner) start(featuresConfig *dto.FeaturesConfig) {
 			success = false
 		}
 	}
-	_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunAfterTestRunHooks})
+	if len(r.pickleEvents) > 0 {
+		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunAfterTestRunHooks})
+	}
 	r.sendCommand(&dto.Command{
 		Type:  "event",
 		Event: event.NewTestRunFinished(success),
