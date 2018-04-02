@@ -7,10 +7,10 @@ This command should be sent by the caller after completing an action.
   "type": "action_complete",
 
   // the id that of the command that has been completed
-  "response_to": "",
+  "responseTo": "",
 
   // the result if the command was to run a test case hook / step
-  "hook_or_step_result": {
+  "hookOrStepResult": {
 
     // "passed" or "failed" or "pending" or "skipped"
     "status": "",
