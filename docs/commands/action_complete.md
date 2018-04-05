@@ -20,7 +20,7 @@ This command should be sent by the caller after completing an action.
 
     // if the status is "failed", this should be the error converted to a string
     // exactly how it should be presented to the user
-    "exception": ""
+    "message": ""
 
   }
 }

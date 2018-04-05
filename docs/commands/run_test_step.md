@@ -13,13 +13,12 @@ This command is sent by the program asking the caller to run a test step. Once c
   "stepDefinitionId": "",
 
   // captures groups
-  "patternCaptureGroups": [
+  "patternMatches": [
     {
-      // the string value from the matching step
-      "value": "",
+      // array of strings for what is captured, usually a single element
+      "captures": [""],
 
       // the parameter type name this capture should be transformed with
-      //   empty string if none
       "parameterTypeName": "",
 
     },
