@@ -1,10 +1,16 @@
-hash: 918f80c0634828ff77d4972b7c974f1f7014dc29278085d02c3a868004dd6e7d
-updated: 2018-04-02T10:31:13.913648916-07:00
+hash: 3c681b44a2cd76b844450ff06e31b1524ef3a33bc7b27777da9225230869f0ad
+updated: 2018-04-05T15:24:28.686551335-07:00
 imports:
+- name: github.com/cucumber/cucumber-expressions-go
+  version: 710012644754cc51fce10932f8a8695a282d95df
 - name: github.com/cucumber/gherkin-go
   version: 217f86b40708460bd14458c6d9588e88db70512a
 - name: github.com/cucumber/tag-expressions-go
-  version: 88f370f86e24f302b77902545982d408e608ddde
+  version: a874ed1ddd6df7823953a9e948231d060d3c3675
+- name: github.com/mattn/go-runewidth
+  version: 9e777a8366cce605130a531d2cd6363d07ad7317
+- name: github.com/olekukonko/tablewriter
+  version: b8a9be070da40449e501c3c4730a889e42d87a9e
 - name: github.com/onsi/gomega
   version: 49e4233a3b46c26dddd43cf84547cf31c92d0f2b
   subpackages:

@@ -4,19 +4,16 @@ import (
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
-	tagexpressions "github.com/cucumber/tag-expressions-go"
-	uuid "github.com/satori/go.uuid"
 )
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
 type NewTestCaseRunnerOptions struct {
-	Pickle                        *gherkin.Pickle
-	URI                           string
-	SendCommand                   func(*dto.Command)
-	SendCommandAndAwaitResponse   func(*dto.Command) *dto.Command
-	BeforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
-	AfterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
-	StepDefinitions               []*dto.StepDefinition
+	ID                          string
+	Pickle                      *gherkin.Pickle
+	URI                         string
+	SendCommand                 func(*dto.Command)
+	SendCommandAndAwaitResponse func(*dto.Command) *dto.Command
+	SupportCodeLibrary          *SupportCodeLibrary
 }
 
 // TestCaseRunner runs a test case
@@ -28,26 +25,33 @@ type TestCaseRunner struct {
 	sendCommand                   func(*dto.Command)
 	sendCommandAndAwaitResponse   func(*dto.Command) *dto.Command
 	stepIndexToStepDefinitions    [][]*dto.StepDefinition
+	stepIndexToPatternMatches     [][]*dto.PatternMatch
 	uri                           string
 
 	result *dto.TestResult
 }
 
 // NewTestCaseRunner returns a TestCaseRunner
-func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
+func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) {
 	stepIndexToStepDefinitions := make([][]*dto.StepDefinition, len(opts.Pickle.Steps))
-	// for i := range opts.Pickle.Steps {
-	// 	// TODO lookup matching step definitions
-	// 	stepIndexToStepDefinitions[i] = []*dto.StepDefinition{}
-	// }
+	stepIndexToPatternMatches := make([][]*dto.PatternMatch, len(opts.Pickle.Steps))
+	for i, step := range opts.Pickle.Steps {
+		var err error
+		stepDefinitions, patternMatches, err := opts.SupportCodeLibrary.GetMatchingStepDefinitions(step.Text)
+		if err != nil {
+			return nil, err
+		}
+		stepIndexToStepDefinitions[i] = stepDefinitions
+		stepIndexToPatternMatches[i] = patternMatches
+	}
 	tagNames := make([]string, len(opts.Pickle.Tags))
 	for i, tag := range opts.Pickle.Tags {
 		tagNames[i] = tag.Name
 	}
 	return &TestCaseRunner{
-		afterTestCaseHookDefinitions:  filterHookDefinitions(opts.AfterTestCaseHookDefinitions, tagNames),
-		beforeTestCaseHookDefinitions: filterHookDefinitions(opts.BeforeTestCaseHookDefinitions, tagNames),
-		id:     uuid.NewV4().String(),
+		afterTestCaseHookDefinitions:  opts.SupportCodeLibrary.GetMatchingAfterTestCaseHookDefinitions(tagNames),
+		beforeTestCaseHookDefinitions: opts.SupportCodeLibrary.GetMatchingBeforeTestCaseHookDefinitions(tagNames),
+		id:     opts.ID,
 		pickle: opts.Pickle,
 		result: &dto.TestResult{
 			Duration: 0,
@@ -56,8 +60,9 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) *TestCaseRunner {
 		sendCommand:                 opts.SendCommand,
 		sendCommandAndAwaitResponse: opts.SendCommandAndAwaitResponse,
 		stepIndexToStepDefinitions:  stepIndexToStepDefinitions,
+		stepIndexToPatternMatches:   stepIndexToPatternMatches,
 		uri: opts.URI,
-	}
+	}, nil
 }
 
 // Run runs a test case
@@ -83,8 +88,8 @@ func (t *TestCaseRunner) updateResult(hookOrStepResult *dto.TestResult) {
 	if t.shouldUpdateResultStatus(hookOrStepResult) {
 		t.result.Status = hookOrStepResult.Status
 	}
-	if hookOrStepResult.Exception != "" {
-		t.result.Exception = hookOrStepResult.Exception
+	if hookOrStepResult.Message != "" && t.result.Message == "" {
+		t.result.Message = hookOrStepResult.Message
 	}
 }
 
@@ -185,28 +190,20 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 		if len(t.stepIndexToStepDefinitions[stepIndex]) == 0 {
 			return &dto.TestResult{Status: dto.StatusUndefined}
 		}
-		// TODO don't run the step if ambiguous
+		if len(t.stepIndexToStepDefinitions[stepIndex]) > 1 {
+			return &dto.TestResult{
+				Status:  dto.StatusAmbiguous,
+				Message: getAmbiguousStepDefinitionsMessage(t.stepIndexToStepDefinitions[stepIndex]),
+			}
+		}
 		// TODO don't run the step if test case result status isnt passed
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
-			Type:       dto.CommandTypeRunTestStep,
-			TestCaseID: t.id,
-			// StepDefinitionID: t.stepIndexToStepDefinitions[stepIndex][0].ID,
-			Arguments: step.Arguments,
+			Type:             dto.CommandTypeRunTestStep,
+			TestCaseID:       t.id,
+			StepDefinitionID: t.stepIndexToStepDefinitions[stepIndex][0].ID,
+			PatternMatches:   t.stepIndexToPatternMatches[stepIndex],
+			Arguments:        step.Arguments,
 		})
 		return response.HookOrStepResult
 	}
-}
-
-func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
-	result := []*dto.TestCaseHookDefinition{}
-	for _, hookDefinition := range hookDefinitions {
-		tagExpression, err := tagexpressions.Parse(hookDefinition.TagExpression)
-		if err != nil {
-			panic(err) // TODO remove as will have a validated hook definition where the tag expression is already parsed
-		}
-		if tagExpression.Evaluate(tagNames) {
-			result = append(result, hookDefinition)
-		}
-	}
-	return result
 }

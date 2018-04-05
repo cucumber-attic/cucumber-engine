@@ -7,5 +7,5 @@ const (
 	// PatternTypeCucumberExpression is for a cucumber expression
 	PatternTypeCucumberExpression = PatternType("cucumber_expression")
 	// PatternTypeRegularExpression is for a regular expression
-	PatternTypeRegularExpression = CommandType("regular_expression")
+	PatternTypeRegularExpression = PatternType("regular_expression")
 )

@@ -1,7 +1,7 @@
 package dto
 
-// ParameterType is the a configuration for cucumber expressions
-type ParameterType struct {
+// ParameterTypeConfig is the config for a cucumber expressions parameter type
+type ParameterTypeConfig struct {
 	Name                 string   `json:"name"`
 	Regexps              []string `json:"regexps"`
 	PreferForRegexpMatch bool     `json:"preferForRegexpMatch"`

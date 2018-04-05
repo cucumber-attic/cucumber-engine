@@ -26,11 +26,8 @@ var _ = Describe("Runner", func() {
 					AbsolutePaths: []string{featurePath},
 					Filters:       &dto.FeaturesFilterConfig{},
 				},
-				&dto.RuntimeConfig{
-					BeforeTestCaseHookDefinitions: []*dto.TestCaseHookDefinition{},
-					AfterTestCaseHookDefinitions:  []*dto.TestCaseHookDefinition{},
-					StepDefinitions:               []*dto.StepDefinition{},
-				},
+				&dto.RuntimeConfig{},
+				&dto.SupportCodeConfig{},
 				func(commandChan chan *dto.Command, command *dto.Command) {
 					switch command.Type {
 					case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
@@ -63,7 +60,7 @@ var _ = Describe("Runner", func() {
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 0,
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -76,7 +73,7 @@ var _ = Describe("Runner", func() {
 				Event: &event.TestStepFinished{
 					Index:  0,
 					Result: &dto.TestResult{Status: dto.StatusUndefined},
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -88,7 +85,7 @@ var _ = Describe("Runner", func() {
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 1,
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -101,7 +98,7 @@ var _ = Describe("Runner", func() {
 				Event: &event.TestStepFinished{
 					Index:  1,
 					Result: &dto.TestResult{Status: dto.StatusUndefined},
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -113,7 +110,7 @@ var _ = Describe("Runner", func() {
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 2,
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -126,7 +123,7 @@ var _ = Describe("Runner", func() {
 				Event: &event.TestStepFinished{
 					Index:  2,
 					Result: &dto.TestResult{Status: dto.StatusUndefined},
-					TestCase: event.TestCase{
+					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
 							Line: 2,
@@ -163,11 +160,8 @@ var _ = Describe("Runner", func() {
 						TagExpression: "@tagA",
 					},
 				},
-				&dto.RuntimeConfig{
-					BeforeTestCaseHookDefinitions: []*dto.TestCaseHookDefinition{},
-					AfterTestCaseHookDefinitions:  []*dto.TestCaseHookDefinition{},
-					StepDefinitions:               []*dto.StepDefinition{},
-				},
+				&dto.RuntimeConfig{},
+				&dto.SupportCodeConfig{},
 				func(commandChan chan *dto.Command, command *dto.Command) {},
 			)
 			Expect(allCommandsSent).To(HaveLen(6))
@@ -192,16 +186,16 @@ var _ = Describe("Runner", func() {
 					AbsolutePaths: []string{featurePath},
 					Filters:       &dto.FeaturesFilterConfig{},
 				},
-				&dto.RuntimeConfig{
-					BeforeTestCaseHookDefinitions: []*dto.TestCaseHookDefinition{
+				&dto.RuntimeConfig{},
+				&dto.SupportCodeConfig{
+					BeforeTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
 						{ID: "1", URI: "hooks.js", Line: 11},
 						{ID: "2", TagExpression: "@tagA", URI: "hooks.js", Line: 12},
 					},
-					AfterTestCaseHookDefinitions: []*dto.TestCaseHookDefinition{
+					AfterTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
 						{ID: "3", TagExpression: "@tagA", URI: "hooks.js", Line: 13},
 						{ID: "4", URI: "hooks.js", Line: 14},
 					},
-					StepDefinitions: []*dto.StepDefinition{},
 				},
 				func(commandChan chan *dto.Command, command *dto.Command) {
 					switch command.Type {
@@ -258,7 +252,7 @@ var _ = Describe("Runner", func() {
 	})
 })
 
-func runWithConfigAndResponder(featuresConfig *dto.FeaturesConfig, runtimeConfig *dto.RuntimeConfig, responder func(chan *dto.Command, *dto.Command)) []*dto.Command {
+func runWithConfigAndResponder(featuresConfig *dto.FeaturesConfig, runtimeConfig *dto.RuntimeConfig, supportCodeConfig *dto.SupportCodeConfig, responder func(chan *dto.Command, *dto.Command)) []*dto.Command {
 	allCommandsSent := []*dto.Command{}
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
@@ -271,9 +265,10 @@ func runWithConfigAndResponder(featuresConfig *dto.FeaturesConfig, runtimeConfig
 		done <- true
 	}()
 	incoming <- &dto.Command{
-		Type:           dto.CommandTypeStart,
-		FeaturesConfig: featuresConfig,
-		RuntimeConfig:  runtimeConfig,
+		Type:              dto.CommandTypeStart,
+		FeaturesConfig:    featuresConfig,
+		RuntimeConfig:     runtimeConfig,
+		SupportCodeConfig: supportCodeConfig,
 	}
 	<-done
 	return allCommandsSent

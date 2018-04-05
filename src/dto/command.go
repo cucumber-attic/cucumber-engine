@@ -15,8 +15,9 @@ type Command struct {
 	HookOrStepResult *TestResult `json:"hookOrStepResult"`
 
 	// Used for type "start"
-	FeaturesConfig *FeaturesConfig `json:"featuresConfig"`
-	RuntimeConfig  *RuntimeConfig  `json:"runtimeConfig"`
+	FeaturesConfig    *FeaturesConfig    `json:"featuresConfig"`
+	RuntimeConfig     *RuntimeConfig     `json:"runtimeConfig"`
+	SupportCodeConfig *SupportCodeConfig `json:"supportCodeConfig"`
 
 	// Used for type "initialize_test_case", "run before/after test case hook",
 	// and "run test step"

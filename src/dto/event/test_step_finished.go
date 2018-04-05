@@ -11,7 +11,7 @@ import (
 type TestStepFinished struct {
 	Index    int
 	Result   *dto.TestResult
-	TestCase TestCase
+	TestCase *TestCase
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
@@ -19,7 +19,7 @@ func (t *TestStepFinished) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Index    int             `json:"index"`
 		Result   *dto.TestResult `json:"result"`
-		TestCase TestCase        `json:"testCase"`
+		TestCase *TestCase       `json:"testCase"`
 		Type     string          `json:"type"`
 	}{
 		Index:    t.Index,
@@ -41,7 +41,7 @@ type NewTestStepFinishedOptions struct {
 func NewTestStepFinished(opts NewTestStepFinishedOptions) *TestStepFinished {
 	return &TestStepFinished{
 		Index: opts.Index,
-		TestCase: TestCase{
+		TestCase: &TestCase{
 			SourceLocation: pickleToLocation(opts.Pickle, opts.URI),
 		},
 		Result: opts.Result,

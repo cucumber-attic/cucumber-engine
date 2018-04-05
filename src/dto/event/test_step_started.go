@@ -9,15 +9,15 @@ import (
 // TestStepStarted is an event for when a test step starts running
 type TestStepStarted struct {
 	Index    int
-	TestCase TestCase
+	TestCase *TestCase
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestStepStarted) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Index    int      `json:"index"`
-		TestCase TestCase `json:"testCase"`
-		Type     string   `json:"type"`
+		Index    int       `json:"index"`
+		TestCase *TestCase `json:"testCase"`
+		Type     string    `json:"type"`
 	}{
 		Index:    t.Index,
 		TestCase: t.TestCase,
@@ -36,7 +36,7 @@ type NewTestStepStartedOptions struct {
 func NewTestStepStarted(opts NewTestStepStartedOptions) *TestStepStarted {
 	return &TestStepStarted{
 		Index: opts.Index,
-		TestCase: TestCase{
+		TestCase: &TestCase{
 			SourceLocation: pickleToLocation(opts.Pickle, opts.URI),
 		},
 	}
