@@ -17,6 +17,7 @@ type NewTestCaseRunnerOptions struct {
 	SendCommand                 func(*dto.Command)
 	SendCommandAndAwaitResponse func(*dto.Command) *dto.Command
 	SupportCodeLibrary          *SupportCodeLibrary
+	IsSkipped                   bool
 }
 
 // TestCaseRunner runs a test case
@@ -24,6 +25,7 @@ type TestCaseRunner struct {
 	afterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
 	beforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
 	id                            string
+	isSkipped                     bool
 	pickle                        *gherkin.Pickle
 	sendCommand                   func(*dto.Command)
 	sendCommandAndAwaitResponse   func(*dto.Command) *dto.Command
@@ -52,14 +54,19 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 	for i, tag := range opts.Pickle.Tags {
 		tagNames[i] = tag.Name
 	}
+	initialStatus := dto.StatusPassed
+	if opts.IsSkipped {
+		initialStatus = dto.StatusSkipped
+	}
 	return &TestCaseRunner{
 		afterTestCaseHookDefinitions:  opts.SupportCodeLibrary.GetMatchingAfterTestCaseHookDefinitions(tagNames),
 		beforeTestCaseHookDefinitions: opts.SupportCodeLibrary.GetMatchingBeforeTestCaseHookDefinitions(tagNames),
-		id:     opts.ID,
-		pickle: opts.Pickle,
+		id:        opts.ID,
+		isSkipped: opts.IsSkipped,
+		pickle:    opts.Pickle,
 		result: &dto.TestResult{
 			Duration: 0,
-			Status:   dto.StatusPassed,
+			Status:   initialStatus,
 		},
 		sendCommand:                 opts.SendCommand,
 		sendCommandAndAwaitResponse: opts.SendCommandAndAwaitResponse,
@@ -74,10 +81,12 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 func (t *TestCaseRunner) Run() *dto.TestResult {
 	t.sendTestCasePreparedEvent()
 	t.sendTestCaseStartedEvent()
-	t.sendCommandAndAwaitResponse(&dto.Command{
-		Type:       dto.CommandTypeInitializeTestCase,
-		TestCaseID: t.id,
-	})
+	if !t.isSkipped {
+		t.sendCommandAndAwaitResponse(&dto.Command{
+			Type:       dto.CommandTypeInitializeTestCase,
+			TestCaseID: t.id,
+		})
+	}
 	for index, runHookOrStepFunc := range t.getRunHookAndStepFuncs() {
 		t.sendTestStepStartedEvent(index)
 		hookOrStepResult := runHookOrStepFunc()
@@ -179,8 +188,10 @@ func (t *TestCaseRunner) getRunHookAndStepFuncs() []func() *dto.TestResult {
 }
 
 func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeHook bool) func() *dto.TestResult {
-	// TODO don't run a before hook if the test case result status is skipped
 	return func() *dto.TestResult {
+		if t.isSkipped || (isBeforeHook && t.result.Status != dto.StatusPassed) {
+			return &dto.TestResult{Status: dto.StatusSkipped}
+		}
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
 			Type:                     dto.CommandTypeRunBeforeTestCaseHook,
 			TestCaseID:               t.id,
@@ -209,7 +220,9 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 				Message: getAmbiguousStepDefinitionsMessage(t.stepIndexToStepDefinitions[stepIndex]),
 			}
 		}
-		// TODO don't run the step if test case result status isnt passed
+		if t.result.Status != dto.StatusPassed {
+			return &dto.TestResult{Status: dto.StatusSkipped}
+		}
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
 			Type:             dto.CommandTypeRunTestStep,
 			TestCaseID:       t.id,

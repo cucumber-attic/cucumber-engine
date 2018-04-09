@@ -20,161 +20,71 @@ var _ = Describe("Runner", func() {
 	Context("with a feature with a single scenario with three steps", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
 
-		It("all steps are undefined", func() {
-			allCommandsSent := runWithConfigAndResponder(
-				&dto.FeaturesConfig{
-					AbsolutePaths: []string{featurePath},
-					Filters:       &dto.FeaturesFilterConfig{},
-				},
-				&dto.RuntimeConfig{},
-				&dto.SupportCodeConfig{},
-				func(commandChan chan *dto.Command, command *dto.Command) {
-					switch command.Type {
-					case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
-						commandChan <- &dto.Command{
-							Type:       dto.CommandTypeActionComplete,
-							ResponseTo: command.ID,
+		Context("all steps are undefined", func() {
+			var allCommandsSent []*dto.Command
+
+			BeforeEach(func() {
+				allCommandsSent = runWithConfigAndResponder(
+					&dto.FeaturesConfig{
+						AbsolutePaths: []string{featurePath},
+						Filters:       &dto.FeaturesFilterConfig{},
+					},
+					&dto.RuntimeConfig{},
+					&dto.SupportCodeConfig{},
+					func(commandChan chan *dto.Command, command *dto.Command) {
+						switch command.Type {
+						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+							}
+						case dto.CommandTypeGenerateSnippet:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+								Snippet:    "snippet",
+							}
 						}
-					case dto.CommandTypeGenerateSnippet:
-						commandChan <- &dto.Command{
-							Type:       dto.CommandTypeActionComplete,
-							ResponseTo: command.ID,
-							Snippet:    "snippet",
-						}
-					}
-				},
-			)
-			Expect(allCommandsSent).To(HaveLen(21))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.PickleEvent{}))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.PickleAccepted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestRunStarted{}))
-			Expect(allCommandsSent[5]).To(BeACommandWithType(dto.CommandTypeRunBeforeTestRunHooks))
-			Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[7]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseStarted{
-					SourceLocation: &event.Location{
-						URI:  featurePath,
-						Line: 2,
 					},
-				},
-			}))
-			Expect(allCommandsSent[8]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[9]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepStarted{
-					Index: 0,
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[10]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-			Expect(allCommandsSent[11]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 0,
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
-					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[12]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepStarted{
-					Index: 1,
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[13]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-			Expect(allCommandsSent[14]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 1,
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
-					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[15]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepStarted{
-					Index: 2,
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[16]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-			Expect(allCommandsSent[17]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 2,
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
-					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
-							URI:  featurePath,
-							Line: 2,
-						},
-					},
-				},
-			}))
-			Expect(allCommandsSent[18]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseFinished{
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
-					},
-					SourceLocation: &event.Location{
-						URI:  featurePath,
-						Line: 2,
-					},
-				},
-			}))
-			Expect(allCommandsSent[19]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
-			Expect(allCommandsSent[20]).To(Equal(&dto.Command{
-				Type:  dto.CommandTypeEvent,
-				Event: &event.TestRunFinished{Success: false},
-			}))
+				)
+			})
+
+			It("sends 21 commands", func() {
+				Expect(allCommandsSent).To(HaveLen(21))
+				Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
+				Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
+				Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.PickleEvent{}))
+				Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.PickleAccepted{}))
+				Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestRunStarted{}))
+				Expect(allCommandsSent[5]).To(BeACommandWithType(dto.CommandTypeRunBeforeTestRunHooks))
+				Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
+				Expect(allCommandsSent[7]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
+				Expect(allCommandsSent[8]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
+				Expect(allCommandsSent[9]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
+				Expect(allCommandsSent[10]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+				Expect(allCommandsSent[11]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
+				Expect(allCommandsSent[12]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
+				Expect(allCommandsSent[13]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+				Expect(allCommandsSent[14]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
+				Expect(allCommandsSent[15]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
+				Expect(allCommandsSent[16]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+				Expect(allCommandsSent[17]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
+				Expect(allCommandsSent[18]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+				Expect(allCommandsSent[19]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
+				Expect(allCommandsSent[20]).To(Equal(&dto.Command{
+					Type:  dto.CommandTypeEvent,
+					Event: &event.TestRunFinished{Success: false},
+				}))
+			})
 		})
 	})
 
 	Context("all pickles gets rejected", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
+		var allCommandsSent []*dto.Command
 
-		It("does not run test run hooks", func() {
-			allCommandsSent := runWithConfigAndResponder(
+		BeforeEach(func() {
+			allCommandsSent = runWithConfigAndResponder(
 				&dto.FeaturesConfig{
 					AbsolutePaths: []string{featurePath},
 					Filters: &dto.FeaturesFilterConfig{
@@ -185,6 +95,9 @@ var _ = Describe("Runner", func() {
 				&dto.SupportCodeConfig{},
 				func(commandChan chan *dto.Command, command *dto.Command) {},
 			)
+		})
+
+		It("does not run test run hooks", func() {
 			Expect(allCommandsSent).To(HaveLen(6))
 			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
 			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
@@ -200,9 +113,10 @@ var _ = Describe("Runner", func() {
 
 	Context("with test case hooks", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "tags.feature")
+		var allCommandsSent []*dto.Command
 
-		It("runs test case hooks only for pickles that match the tag expression", func() {
-			allCommandsSent := runWithConfigAndResponder(
+		BeforeEach(func() {
+			allCommandsSent = runWithConfigAndResponder(
 				&dto.FeaturesConfig{
 					AbsolutePaths: []string{featurePath},
 					Filters:       &dto.FeaturesFilterConfig{},
@@ -242,6 +156,9 @@ var _ = Describe("Runner", func() {
 					}
 				},
 			)
+		})
+
+		It("runs test case hooks only for pickles that match the tag expression", func() {
 			testCasePreparedEvents := []*event.TestCasePrepared{}
 			for _, command := range allCommandsSent {
 				if command.Type == dto.CommandTypeEvent {

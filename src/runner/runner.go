@@ -74,9 +74,11 @@ func (r *Runner) start(command *dto.Command) {
 	if len(acceptedPickleEvents) > 0 {
 		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunBeforeTestRunHooks})
 	}
+	isSkipped := command.RuntimeConfig.IsDryRun
 	for _, pickleEvent := range acceptedPickleEvents {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			ID:                          uuid.NewV4().String(),
+			IsSkipped:                   isSkipped,
 			Pickle:                      pickleEvent.Pickle,
 			SendCommand:                 r.sendCommand,
 			SendCommandAndAwaitResponse: r.sendCommandAndAwaitResponse,
@@ -93,6 +95,9 @@ func (r *Runner) start(command *dto.Command) {
 		result := testCaseRunner.Run()
 		if r.shouldCauseFailure(result.Status, command.RuntimeConfig.IsStrict) {
 			success = false
+			if !isSkipped && command.RuntimeConfig.IsFailFast {
+				isSkipped = true
+			}
 		}
 	}
 	if len(acceptedPickleEvents) > 0 {
