@@ -424,6 +424,8 @@ var _ = Describe("TestCaseRunner", func() {
 	Context("with a undefined step", func() {
 		var allCommandsSent []*dto.Command
 		var result *dto.TestResult
+		var snippet = "snippet line1\nsnippet line2\nsnippet line3"
+		var resultMessage = "Undefined. Implement with the following snippet:\n\n  snippet line1\n  snippet line2\n  snippet line3"
 
 		BeforeEach(func() {
 			allCommandsSent = []*dto.Command{}
@@ -432,6 +434,12 @@ var _ = Describe("TestCaseRunner", func() {
 			}
 			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
 				allCommandsSent = append(allCommandsSent, command)
+				if command.Type == dto.CommandTypeGenerateSnippet {
+					return &dto.Command{
+						Type:    dto.CommandTypeActionComplete,
+						Snippet: snippet,
+					}
+				}
 				return &dto.Command{
 					Type: dto.CommandTypeActionComplete,
 				}
@@ -460,12 +468,13 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a undefined result", func() {
 			Expect(result).To(Equal(&dto.TestResult{
-				Status: dto.StatusUndefined,
+				Status:  dto.StatusUndefined,
+				Message: resultMessage,
 			}))
 		})
 
-		It("sends 6 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(6))
+		It("sends 7 commands", func() {
+			Expect(allCommandsSent).To(HaveLen(7))
 		})
 
 		It("sends the test case prepared event command without an action location", func() {
@@ -488,14 +497,26 @@ var _ = Describe("TestCaseRunner", func() {
 			}))
 		})
 
-		It("sends the test step finished event command with status undefined", func() {
+		It("sends the generate snippet command", func() {
 			Expect(allCommandsSent[4]).To(Equal(&dto.Command{
+				Type: dto.CommandTypeGenerateSnippet,
+				GeneratedExpressions: []*dto.GeneratedExpression{
+					{
+						Text:               "I have {int} cukes",
+						ParameterTypeNames: []string{"int"},
+					},
+				},
+			}))
+		})
+
+		It("sends the test step finished event command with status undefined", func() {
+			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepFinished{
 					Index: 0,
 					Result: &dto.TestResult{
-						Status: dto.StatusUndefined,
-						// TODO message should be the snippet retrieved from generate snippet command
+						Status:  dto.StatusUndefined,
+						Message: resultMessage,
 					},
 					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
@@ -508,7 +529,7 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command with status undefined", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
 					SourceLocation: &event.Location{
@@ -516,7 +537,8 @@ var _ = Describe("TestCaseRunner", func() {
 						Line: 1,
 					},
 					Result: &dto.TestResult{
-						Status: dto.StatusUndefined,
+						Status:  dto.StatusUndefined,
+						Message: resultMessage,
 					},
 				},
 			}))

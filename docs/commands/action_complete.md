@@ -22,6 +22,10 @@ This command should be sent by the caller after completing an action.
     // exactly how it should be presented to the user
     "message": ""
 
-  }
+  },
+
+  // the snippet if the command was to generate a snippet
+  // `{{keyword}}` will be replaced by the proper step keyword in the formatters
+  "snippet": ""
 }
 ```

@@ -1,6 +1,9 @@
 package runner
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
@@ -26,6 +29,7 @@ type TestCaseRunner struct {
 	sendCommandAndAwaitResponse   func(*dto.Command) *dto.Command
 	stepIndexToStepDefinitions    [][]*dto.StepDefinition
 	stepIndexToPatternMatches     [][]*dto.PatternMatch
+	supportCodeLibrary            *SupportCodeLibrary
 	uri                           string
 
 	result *dto.TestResult
@@ -61,7 +65,8 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 		sendCommandAndAwaitResponse: opts.SendCommandAndAwaitResponse,
 		stepIndexToStepDefinitions:  stepIndexToStepDefinitions,
 		stepIndexToPatternMatches:   stepIndexToPatternMatches,
-		uri: opts.URI,
+		supportCodeLibrary:          opts.SupportCodeLibrary,
+		uri:                         opts.URI,
 	}, nil
 }
 
@@ -188,7 +193,15 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) func() *dto.TestResult {
 	return func() *dto.TestResult {
 		if len(t.stepIndexToStepDefinitions[stepIndex]) == 0 {
-			return &dto.TestResult{Status: dto.StatusUndefined}
+			response := t.sendCommandAndAwaitResponse(&dto.Command{
+				Type:                 dto.CommandTypeGenerateSnippet,
+				GeneratedExpressions: t.supportCodeLibrary.GenerateExpressions(step.Text),
+				Arguments:            step.Arguments,
+			})
+			return &dto.TestResult{
+				Status:  dto.StatusUndefined,
+				Message: fmt.Sprintf("Undefined. Implement with the following snippet:\n\n  %s", strings.Replace(response.Snippet, "\n", "\n  ", -1)),
+			}
 		}
 		if len(t.stepIndexToStepDefinitions[stepIndex]) > 1 {
 			return &dto.TestResult{

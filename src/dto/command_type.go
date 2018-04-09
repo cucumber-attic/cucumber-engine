@@ -23,6 +23,8 @@ const (
 	CommandTypeRunAfterTestRunHooks = CommandType("run_after_test_run_hooks")
 	// CommandTypeEvent is sent when an event occurs
 	CommandTypeEvent = CommandType("event")
+	// CommandTypeGenerateSnippet is sent to have the caller generate a step snippet for a pattern
+	CommandTypeGenerateSnippet = CommandType("generate_snippet")
 	// CommandTypeError is sent when an error occurs
 	CommandTypeError = CommandType("error")
 )

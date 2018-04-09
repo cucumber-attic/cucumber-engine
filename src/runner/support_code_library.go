@@ -12,6 +12,7 @@ import (
 type SupportCodeLibrary struct {
 	afterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
 	beforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
+	parameterTypeRegistry         *cucumberexpressions.ParameterTypeRegistry
 	stepDefinitions               []*dto.StepDefinition
 }
 
@@ -36,6 +37,7 @@ func NewSupportCodeLibrary(config *dto.SupportCodeConfig) (*SupportCodeLibrary, 
 	return &SupportCodeLibrary{
 		afterTestCaseHookDefinitions:  afterTestCaseHookDefinitions,
 		beforeTestCaseHookDefinitions: beforeTestCaseHookDefinitions,
+		parameterTypeRegistry:         parameterTypeRegistry,
 		stepDefinitions:               stepDefinitions,
 	}, nil
 }
@@ -79,6 +81,24 @@ func (s *SupportCodeLibrary) GetMatchingStepDefinitions(text string) ([]*dto.Ste
 	return stepDefinitions, patternMatches, nil
 }
 
+// GenerateExpressions returns the generated expressions for an undefined step
+func (s *SupportCodeLibrary) GenerateExpressions(text string) []*dto.GeneratedExpression {
+	generator := cucumberexpressions.NewCucumberExpressionGenerator(s.parameterTypeRegistry)
+	expressions := generator.GenerateExpressions(text)
+	result := make([]*dto.GeneratedExpression, len(expressions))
+	for i, expression := range expressions {
+		parameterTypeNames := make([]string, len(expression.ParameterTypes()))
+		for j, parameterType := range expression.ParameterTypes() {
+			parameterTypeNames[j] = parameterType.Name()
+		}
+		result[i] = &dto.GeneratedExpression{
+			Text:               expression.Source(),
+			ParameterTypeNames: parameterTypeNames,
+		}
+	}
+	return result
+}
+
 func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
 	result := []*dto.TestCaseHookDefinition{}
 	for _, hookDefinition := range hookDefinitions {
@@ -97,6 +117,7 @@ func createParameterTypeRegistry(parameterTypeConfigs []*dto.ParameterTypeConfig
 			var err error
 			regexps[i], err = regexp.Compile(regexpSource)
 			if err != nil {
+				// TODO wrap error with parameterType name
 				return nil, err
 			}
 		}
@@ -109,10 +130,12 @@ func createParameterTypeRegistry(parameterTypeConfigs []*dto.ParameterTypeConfig
 			parameterTypeConfig.PreferForRegexpMatch,
 		)
 		if err != nil {
+			// TODO wrap error with parameterType name
 			return nil, err
 		}
 		err = parameterTypeRegistry.DefineParameterType(parameterType)
 		if err != nil {
+			// TODO wrap error with parameterType name
 			return nil, err
 		}
 	}

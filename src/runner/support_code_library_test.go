@@ -47,6 +47,20 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	Describe("GenerateExpressions", func() {
+		It("returns the generated expressions", func() {
+			var err error
+			library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(library.GenerateExpressions(`I have 100 cukes`)).To(Equal([]*dto.GeneratedExpression{
+				{
+					Text:               "I have {int} cukes",
+					ParameterTypeNames: []string{"int"},
+				},
+			}))
+		})
+	})
+
 	Describe("GetMatchingAfterTestCaseHookDefinitions", func() {
 		Context("with an empty config", func() {
 			BeforeEach(func() {

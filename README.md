@@ -14,6 +14,7 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
     * [Run before test run hooks](./docs/commands/run_test_run_hooks.md)
     * [Initialize test case](./docs/commands/initialize_test_case.md)
     * [Run before test case hooks](./docs/commands/run_test_case_hook.md)
+    * [Generate snippet](./docs/commands/generate_snippet.md)
     * [Run test step](./docs/commands/run_test_step.md)
     * [Run after test case hooks](./docs/commands/run_test_case_hook.md)
     * [Run after test run hooks](./docs/commands/run_test_run_hooks.md)

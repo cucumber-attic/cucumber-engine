@@ -35,10 +35,16 @@ var _ = Describe("Runner", func() {
 							Type:       dto.CommandTypeActionComplete,
 							ResponseTo: command.ID,
 						}
+					case dto.CommandTypeGenerateSnippet:
+						commandChan <- &dto.Command{
+							Type:       dto.CommandTypeActionComplete,
+							ResponseTo: command.ID,
+							Snippet:    "snippet",
+						}
 					}
 				},
 			)
-			Expect(allCommandsSent).To(HaveLen(18))
+			Expect(allCommandsSent).To(HaveLen(21))
 			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
 			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
 			Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.PickleEvent{}))
@@ -68,11 +74,15 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[10]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[10]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+			Expect(allCommandsSent[11]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepFinished{
-					Index:  0,
-					Result: &dto.TestResult{Status: dto.StatusUndefined},
+					Index: 0,
+					Result: &dto.TestResult{
+						Status:  dto.StatusUndefined,
+						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
+					},
 					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
@@ -81,7 +91,7 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[11]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[12]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 1,
@@ -93,11 +103,15 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[12]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[13]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+			Expect(allCommandsSent[14]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepFinished{
-					Index:  1,
-					Result: &dto.TestResult{Status: dto.StatusUndefined},
+					Index: 1,
+					Result: &dto.TestResult{
+						Status:  dto.StatusUndefined,
+						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
+					},
 					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
@@ -106,7 +120,7 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[13]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[15]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 2,
@@ -118,11 +132,15 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[14]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[16]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
+			Expect(allCommandsSent[17]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepFinished{
-					Index:  2,
-					Result: &dto.TestResult{Status: dto.StatusUndefined},
+					Index: 2,
+					Result: &dto.TestResult{
+						Status:  dto.StatusUndefined,
+						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
+					},
 					TestCase: &event.TestCase{
 						SourceLocation: &event.Location{
 							URI:  featurePath,
@@ -131,18 +149,21 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}))
-			Expect(allCommandsSent[15]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[18]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
-					Result: &dto.TestResult{Status: dto.StatusUndefined},
+					Result: &dto.TestResult{
+						Status:  dto.StatusUndefined,
+						Message: "Undefined. Implement with the following snippet:\n\n  snippet",
+					},
 					SourceLocation: &event.Location{
 						URI:  featurePath,
 						Line: 2,
 					},
 				},
 			}))
-			Expect(allCommandsSent[16]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
-			Expect(allCommandsSent[17]).To(Equal(&dto.Command{
+			Expect(allCommandsSent[19]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
+			Expect(allCommandsSent[20]).To(Equal(&dto.Command{
 				Type:  dto.CommandTypeEvent,
 				Event: &event.TestRunFinished{Success: false},
 			}))
@@ -211,6 +232,12 @@ var _ = Describe("Runner", func() {
 							HookOrStepResult: &dto.TestResult{
 								Status: dto.StatusPassed,
 							},
+						}
+					case dto.CommandTypeGenerateSnippet:
+						commandChan <- &dto.Command{
+							Type:       dto.CommandTypeActionComplete,
+							ResponseTo: command.ID,
+							Snippet:    "snippet",
 						}
 					}
 				},

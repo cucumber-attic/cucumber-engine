@@ -27,9 +27,17 @@ type Command struct {
 	TestCaseHookDefinitionID string `json:"testCaseHookDefinitionId"`
 
 	// Used for type "run test step"
-	StepDefinitionID string             `json:"stepDefinitionId"`
-	PatternMatches   []*PatternMatch    `json:"patternMatches"`
-	Arguments        []gherkin.Argument `json:"arguments"`
+	StepDefinitionID string          `json:"stepDefinitionId"`
+	PatternMatches   []*PatternMatch `json:"patternMatches"`
+
+	// Used for type "run test step" and "generate snippet"
+	Arguments []gherkin.Argument `json:"arguments"`
+
+	// Used for type "generate snippet"
+	GeneratedExpressions []*GeneratedExpression `json:"generateExpression"`
+
+	// Used for type "action complete" when action was "generate_snippet"
+	Snippet string `json:"string"`
 
 	// Used for type "event"
 	Event interface{} `json:"event"`
