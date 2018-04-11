@@ -11,6 +11,7 @@ import (
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
 type NewTestCaseRunnerOptions struct {
+	BaseDirectory               string
 	ID                          string
 	Pickle                      *gherkin.Pickle
 	URI                         string
@@ -23,6 +24,7 @@ type NewTestCaseRunnerOptions struct {
 // TestCaseRunner runs a test case
 type TestCaseRunner struct {
 	afterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
+	baseDirectory                 string
 	beforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
 	id                            string
 	isSkipped                     bool
@@ -60,6 +62,7 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 	}
 	return &TestCaseRunner{
 		afterTestCaseHookDefinitions:  opts.SupportCodeLibrary.GetMatchingAfterTestCaseHookDefinitions(tagNames),
+		baseDirectory:                 opts.BaseDirectory,
 		beforeTestCaseHookDefinitions: opts.SupportCodeLibrary.GetMatchingBeforeTestCaseHookDefinitions(tagNames),
 		id:        opts.ID,
 		isSkipped: opts.IsSkipped,
@@ -220,9 +223,16 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 			}
 		}
 		if len(t.stepIndexToStepDefinitions[stepIndex]) > 1 {
+			message, err := getAmbiguousStepDefinitionsMessage(t.stepIndexToStepDefinitions[stepIndex], t.baseDirectory)
+			if err != nil {
+				t.sendCommand(&dto.Command{
+					Type:  dto.CommandTypeError,
+					Error: err.Error(),
+				})
+			}
 			return &dto.TestResult{
 				Status:  dto.StatusAmbiguous,
-				Message: getAmbiguousStepDefinitionsMessage(t.stepIndexToStepDefinitions[stepIndex]),
+				Message: message,
 			}
 		}
 		if t.result.Status != dto.StatusPassed {

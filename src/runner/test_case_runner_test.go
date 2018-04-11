@@ -435,6 +435,85 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 	})
 
+	Context("with a ambiguous step and base directory", func() {
+		var allCommandsSent []*dto.Command
+		var result *dto.TestResult
+
+		BeforeEach(func() {
+			allCommandsSent = []*dto.Command{}
+			sendCommand := func(command *dto.Command) {
+				allCommandsSent = append(allCommandsSent, command)
+			}
+			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
+				allCommandsSent = append(allCommandsSent, command)
+				return &dto.Command{
+					Type: dto.CommandTypeActionComplete,
+				}
+			}
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
+				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
+					{
+						ID: "step1",
+						Pattern: dto.Pattern{
+							Source: "I have {int} cukes",
+							Type:   dto.PatternTypeCucumberExpression,
+						},
+						Line: 3,
+						URI:  "/path/to/base/path/to/steps",
+					},
+					{
+						ID: "step2",
+						Pattern: dto.Pattern{
+							Source: `^I have (\d+) cukes$`,
+							Type:   dto.PatternTypeRegularExpression,
+						},
+						Line: 4,
+						URI:  "/path/to/base/path/to/steps",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
+				BaseDirectory: "/path/to/base",
+				ID:            "testCase1",
+				Pickle: &gherkin.Pickle{
+					Locations: []gherkin.Location{{Line: 1}},
+					Steps: []*gherkin.PickleStep{
+						{
+							Locations: []gherkin.Location{{Line: 2}},
+							Text:      "I have 100 cukes",
+						},
+					},
+				},
+				SendCommand:                 sendCommand,
+				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
+				SupportCodeLibrary:          supportCodeLibrary,
+				URI:                         "/path/to/base/path/to/feature",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			result = testCaseRunner.Run()
+		})
+
+		It("returns a ambiguous result with the paths ", func() {
+			Expect(result).To(Equal(&dto.TestResult{
+				Status: dto.StatusAmbiguous,
+				Message: "Multiple step definitions match:\n" +
+					"  'I have {int} cukes'   - path/to/steps:3  \n" +
+					`  '^I have (\d+) cukes$' - path/to/steps:4  ` + "\n",
+			}))
+		})
+
+		It("sends 6 commands", func() {
+			Expect(allCommandsSent).To(HaveLen(6))
+			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
+			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
+			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
+			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
+			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
+			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+		})
+	})
+
 	Context("with a undefined step", func() {
 		var allCommandsSent []*dto.Command
 		var result *dto.TestResult

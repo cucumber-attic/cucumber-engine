@@ -6,6 +6,10 @@ This command should be sent from the calling program immediately
 {
   "type": "start",
 
+  // the base directory of the features / support code
+  // paths displayed will be relative to this
+  "baseDirectory": "",
+
   "featuresConfig": {
 
     // array of paths to features that need to be loaded
@@ -23,6 +27,7 @@ This command should be sent from the calling program immediately
       "tagExpression": "",
 
       // map from feature path to array of line numbers for what scenarios to run
+      // if a feature path is not present, it will run all scenarios in that feature
       "lines": {
         "/path/to/feature": [1],
         //...
@@ -41,6 +46,10 @@ This command should be sent from the calling program immediately
     // if true, pending steps cause the test run to fail
     "isStrict": false,
 
+  },
+
+  "supportCodeConfig": {
+
     // hooks to run before each test case
     "beforeTestCaseHookDefinitions": [
       {
@@ -50,7 +59,7 @@ This command should be sent from the calling program immediately
         // tag expression for what scenarios this hook should run on
         "tagExpression": "",
 
-        // uri / line for where the hook was defined (optional)
+        // uri (absolute path) / line for where the hook was defined
         "uri": "",
         "line": ""
       }
@@ -68,12 +77,13 @@ This command should be sent from the calling program immediately
 
         "pattern": {
           // text or regexp as string
+          // regexp should follow https://golang.org/pkg/regexp/syntax/
           "source": "",
           // "regular_expression" or "cucumber_expression"
           "type": ""
         },
 
-        // uri / line for where the hook was defined (optional)
+        // uri (absolute path) / line for where the hook was defined
         "uri": "",
         "line": ""
       }

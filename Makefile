@@ -18,7 +18,7 @@ setup:
 	glide install
 	gometalinter.v2 --install
 
-spec: lint unit-test
+spec: build lint unit-test
 
 unit-test:
 	ginkgo src/...

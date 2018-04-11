@@ -15,6 +15,7 @@ type Command struct {
 	HookOrStepResult *TestResult `json:"hookOrStepResult"`
 
 	// Used for type "start"
+	BaseDirectory     string             `json:"baseDirectory"`
 	FeaturesConfig    *FeaturesConfig    `json:"featuresConfig"`
 	RuntimeConfig     *RuntimeConfig     `json:"runtimeConfig"`
 	SupportCodeConfig *SupportCodeConfig `json:"supportCodeConfig"`

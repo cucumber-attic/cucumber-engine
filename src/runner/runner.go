@@ -79,6 +79,7 @@ func (r *Runner) start(command *dto.Command) {
 	isSkipped := command.RuntimeConfig.IsDryRun
 	for _, pickleEvent := range acceptedPickleEvents {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
+			BaseDirectory:               command.BaseDirectory,
 			ID:                          uuid.NewV4().String(),
 			IsSkipped:                   isSkipped,
 			Pickle:                      pickleEvent.Pickle,
