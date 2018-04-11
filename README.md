@@ -19,6 +19,7 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
     * [Run after test case hooks](./docs/commands/run_test_case_hook.md)
     * [Run after test run hooks](./docs/commands/run_test_run_hooks.md)
   * The program will also send [event](./docs/commands/event.md) commands
+  * The program may send an [error](./docs/commands/error.md) command
 
 ## Development
 
