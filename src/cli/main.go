@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bufio"
@@ -9,7 +9,8 @@ import (
 	"github.com/cucumber/cucumber-pickle-runner/src/runner"
 )
 
-func main() {
+func Execute() {
+	// id := uuid.NewV4().String()
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)
@@ -19,18 +20,20 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			os.Stdout.Write(data)
+			// fmt.Fprintln(os.Stderr, id+" shared Out: "+string(data))
+			os.Stdout.Write(append(data, []byte("\n")...))
 		}
 		done <- true
 	}()
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		command := dto.Command{}
+		command := &dto.Command{}
 		data := scanner.Bytes()
+		// fmt.Fprintln(os.Stderr, id+" shared In: "+string(data))
 		if err := json.Unmarshal(data, command); err != nil {
 			panic(err)
 		}
-		incoming <- &command
+		incoming <- command
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)

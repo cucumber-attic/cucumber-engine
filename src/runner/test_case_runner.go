@@ -192,8 +192,13 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 		if t.isSkipped || (isBeforeHook && t.result.Status != dto.StatusPassed) {
 			return &dto.TestResult{Status: dto.StatusSkipped}
 		}
+		commandType := dto.CommandTypeRunAfterTestCaseHook
+		if isBeforeHook {
+			commandType = dto.CommandTypeRunBeforeTestCaseHook
+		}
+		// TODO also send the test case result
 		response := t.sendCommandAndAwaitResponse(&dto.Command{
-			Type:                     dto.CommandTypeRunBeforeTestCaseHook,
+			Type:                     commandType,
 			TestCaseID:               t.id,
 			TestCaseHookDefinitionID: hook.ID,
 		})
@@ -207,7 +212,7 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 			response := t.sendCommandAndAwaitResponse(&dto.Command{
 				Type:                 dto.CommandTypeGenerateSnippet,
 				GeneratedExpressions: t.supportCodeLibrary.GenerateExpressions(step.Text),
-				Arguments:            step.Arguments,
+				PickleArguments:      step.Arguments,
 			})
 			return &dto.TestResult{
 				Status:  dto.StatusUndefined,
@@ -228,7 +233,7 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 			TestCaseID:       t.id,
 			StepDefinitionID: t.stepIndexToStepDefinitions[stepIndex][0].ID,
 			PatternMatches:   t.stepIndexToPatternMatches[stepIndex],
-			Arguments:        step.Arguments,
+			PickleArguments:  step.Arguments,
 		})
 		return response.HookOrStepResult
 	}

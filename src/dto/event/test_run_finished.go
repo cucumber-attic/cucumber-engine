@@ -1,26 +1,30 @@
 package event
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/cucumber/cucumber-pickle-runner/src/dto"
+)
 
 // TestRunFinished is an event for when the test run finishes
 type TestRunFinished struct {
-	Success bool
+	Result *dto.TestRunResult
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestRunFinished) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Success bool   `json:"success"`
-		Type    string `json:"type"`
+		Result *dto.TestRunResult `json:"result"`
+		Type   string             `json:"type"`
 	}{
-		Success: t.Success,
-		Type:    "test-run-finished",
+		Result: t.Result,
+		Type:   "test-run-finished",
 	})
 }
 
 // NewTestRunFinished creates a TestRunFinished
-func NewTestRunFinished(success bool) *TestRunFinished {
+func NewTestRunFinished(result *dto.TestRunResult) *TestRunFinished {
 	return &TestRunFinished{
-		Success: success,
+		Result: result,
 	}
 }

@@ -305,8 +305,8 @@ var _ = Describe("TestCaseRunner", func() {
 		var allCommandsSent []*dto.Command
 		var result *dto.TestResult
 		expectedMessage := "Multiple step definitions match:\n" +
-			"  I have {int} cukes     /path/to/steps:3  \n" +
-			`  ^I have (\d+) cukes$   /path/to/steps:4  ` + "\n"
+			"  'I have {int} cukes'   - /path/to/steps:3  \n" +
+			`  '^I have (\d+) cukes$' - /path/to/steps:4  ` + "\n"
 
 		BeforeEach(func() {
 			allCommandsSent = []*dto.Command{}

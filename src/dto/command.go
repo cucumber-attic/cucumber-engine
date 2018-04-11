@@ -31,7 +31,7 @@ type Command struct {
 	PatternMatches   []*PatternMatch `json:"patternMatches"`
 
 	// Used for type "run test step" and "generate snippet"
-	Arguments []gherkin.Argument `json:"arguments"`
+	PickleArguments []gherkin.Argument `json:"pickleArguments"`
 
 	// Used for type "generate snippet"
 	GeneratedExpressions []*GeneratedExpression `json:"generateExpression"`

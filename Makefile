@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := spec
 
+build:
+	go install
+
 fix-lint:
 	goimports -w src
 

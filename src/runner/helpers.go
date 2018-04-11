@@ -13,7 +13,7 @@ func getAmbiguousStepDefinitionsMessage(stepDefinitions []*dto.StepDefinition) s
 	table := tablewriter.NewWriter(&buf)
 	table.SetBorder(false)
 	table.SetRowSeparator(" ")
-	table.SetColumnSeparator(" ")
+	table.SetColumnSeparator("-")
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	data := [][]string{}
 	for _, stepDefinition := range stepDefinitions {
@@ -21,7 +21,7 @@ func getAmbiguousStepDefinitionsMessage(stepDefinitions []*dto.StepDefinition) s
 		if (stepDefinition.Line != 0) && stepDefinition.URI != "" {
 			location = fmt.Sprintf("%s:%d", stepDefinition.URI, stepDefinition.Line)
 		}
-		data = append(data, []string{stepDefinition.Expression.Source(), location})
+		data = append(data, []string{"'" + stepDefinition.Expression.Source() + "'", location})
 	}
 	table.AppendBulk(data)
 	table.Render()

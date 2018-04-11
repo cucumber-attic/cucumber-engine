@@ -28,7 +28,7 @@ func (t *TestCasePrepared) MarshalJSON() ([]byte, error) {
 	}{
 		SourceLocation: t.SourceLocation,
 		Steps:          t.Steps,
-		Type:           "test-case-finished",
+		Type:           "test-case-prepared",
 	})
 }
 

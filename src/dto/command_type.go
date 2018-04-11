@@ -12,7 +12,7 @@ const (
 	// CommandTypeRunBeforeTestRunHooks is sent to have the caller run before test run hooks
 	CommandTypeRunBeforeTestRunHooks = CommandType("run_before_test_run_hooks")
 	// CommandTypeInitializeTestCase is sent to have the caller initialize a test case
-	CommandTypeInitializeTestCase = CommandType("run_initialize_test_case")
+	CommandTypeInitializeTestCase = CommandType("initialize_test_case")
 	// CommandTypeRunBeforeTestCaseHook is sent to have the caller run a before test case hook
 	CommandTypeRunBeforeTestCaseHook = CommandType("run_before_test_case_hook")
 	// CommandTypeRunTestStep is sent to have the caller run a step

@@ -18,7 +18,7 @@ func (t *TestCaseStarted) MarshalJSON() ([]byte, error) {
 		Type           string    `json:"type"`
 	}{
 		SourceLocation: t.SourceLocation,
-		Type:           "test-case-finished",
+		Type:           "test-case-started",
 	})
 }
 

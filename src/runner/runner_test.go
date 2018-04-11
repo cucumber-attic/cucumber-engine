@@ -73,7 +73,7 @@ var _ = Describe("Runner", func() {
 				Expect(allCommandsSent[19]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
 				Expect(allCommandsSent[20]).To(Equal(&dto.Command{
 					Type:  dto.CommandTypeEvent,
-					Event: &event.TestRunFinished{Success: false},
+					Event: &event.TestRunFinished{Result: &dto.TestRunResult{Success: false}},
 				}))
 			})
 		})
@@ -106,7 +106,7 @@ var _ = Describe("Runner", func() {
 			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestRunStarted{}))
 			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
 				Type:  dto.CommandTypeEvent,
-				Event: &event.TestRunFinished{Success: true},
+				Event: &event.TestRunFinished{Result: &dto.TestRunResult{Success: true}},
 			}))
 		})
 	})

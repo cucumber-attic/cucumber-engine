@@ -13,6 +13,7 @@ type Runner struct {
 	outgoingCommands chan *dto.Command
 	isStrict         bool
 	responseChannels map[string]chan *dto.Command
+	result           *dto.TestRunResult
 }
 
 // NewRunner creates a runner
@@ -21,6 +22,7 @@ func NewRunner() *Runner {
 		incomingCommands: make(chan *dto.Command),
 		outgoingCommands: make(chan *dto.Command),
 		responseChannels: map[string]chan *dto.Command{},
+		result:           &dto.TestRunResult{Success: true, Duration: 0},
 	}
 	go func() {
 		for command := range r.incomingCommands {
@@ -70,10 +72,10 @@ func (r *Runner) start(command *dto.Command) {
 		Type:  "event",
 		Event: event.NewTestRunStarted(),
 	})
-	success := true
 	if len(acceptedPickleEvents) > 0 {
 		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunBeforeTestRunHooks})
 	}
+	testRunResult := &dto.TestRunResult{Success: true, Duration: 0}
 	isSkipped := command.RuntimeConfig.IsDryRun
 	for _, pickleEvent := range acceptedPickleEvents {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
@@ -92,9 +94,10 @@ func (r *Runner) start(command *dto.Command) {
 			})
 			return
 		}
-		result := testCaseRunner.Run()
-		if r.shouldCauseFailure(result.Status, command.RuntimeConfig.IsStrict) {
-			success = false
+		testCaseResult := testCaseRunner.Run()
+		testRunResult.Duration += testCaseResult.Duration
+		if r.shouldCauseFailure(testCaseResult.Status, command.RuntimeConfig.IsStrict) {
+			testRunResult.Success = false
 			if !isSkipped && command.RuntimeConfig.IsFailFast {
 				isSkipped = true
 			}
@@ -105,7 +108,7 @@ func (r *Runner) start(command *dto.Command) {
 	}
 	r.sendCommand(&dto.Command{
 		Type:  "event",
-		Event: event.NewTestRunFinished(success),
+		Event: event.NewTestRunFinished(testRunResult),
 	})
 	close(r.outgoingCommands)
 }
