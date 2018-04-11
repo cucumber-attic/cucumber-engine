@@ -9,7 +9,7 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
 * Ensure you have downloaded the proper executable for the user's machine.
 * Run the executable
   * The program can be interfaced with newline delimited json over stdin / stdout.
-  * The program should be sent a [start](./docs/commands/start.md)
+  * The program should be sent a [start](./docs/commands/start.md) command
   * The program will then send commands for the caller to complete. The caller should send a [response](./docs/commands/action_complete.md) once the action is complete.
     * [Run before test run hooks](./docs/commands/run_test_run_hooks.md)
     * [Initialize test case](./docs/commands/initialize_test_case.md)
