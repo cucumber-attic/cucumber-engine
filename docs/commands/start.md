@@ -32,7 +32,15 @@ This command should be sent from the calling program immediately
         "/path/to/feature": [1],
         //...
       },
-    }
+    },
+
+    // what order to run scenarios in
+    order: {
+      // "defined" or "random"
+      type: "",
+      // if type is random, the seed is required
+      seed: 0,
+    },
   },
 
   "runtimeConfig": {
