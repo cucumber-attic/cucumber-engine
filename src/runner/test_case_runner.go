@@ -88,6 +88,9 @@ func (t *TestCaseRunner) Run() *dto.TestResult {
 		t.sendCommandAndAwaitResponse(&dto.Command{
 			Type:       dto.CommandTypeInitializeTestCase,
 			TestCaseID: t.id,
+			TestCase: &dto.TestCase{
+				SourceLocation: dto.NewLocationForPickle(t.pickle, t.uri),
+			},
 		})
 	}
 	for index, runHookOrStepFunc := range t.getRunHookAndStepFuncs() {

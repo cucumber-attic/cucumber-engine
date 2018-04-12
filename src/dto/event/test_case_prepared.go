@@ -9,20 +9,20 @@ import (
 
 // TestCasePreparedStep is the location information for a step / hook
 type TestCasePreparedStep struct {
-	SourceLocation *Location `json:"sourceLocation"`
-	ActionLocation *Location `json:"actionLocation"`
+	SourceLocation *dto.Location `json:"sourceLocation"`
+	ActionLocation *dto.Location `json:"actionLocation"`
 }
 
 // TestCasePrepared is an event for when a test case has computed what steps and hooks will run
 type TestCasePrepared struct {
-	SourceLocation *Location
+	SourceLocation *dto.Location
 	Steps          []*TestCasePreparedStep
 }
 
 // MarshalJSON is the custom JSON marshalling to add the event type
 func (t *TestCasePrepared) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		SourceLocation *Location               `json:"sourceLocation"`
+		SourceLocation *dto.Location           `json:"sourceLocation"`
 		Steps          []*TestCasePreparedStep `json:"steps"`
 		Type           string                  `json:"type"`
 	}{
@@ -46,25 +46,25 @@ func NewTestCasePrepared(opts NewTestCasePreparedOptions) *TestCasePrepared {
 	var steps []*TestCasePreparedStep
 	for _, def := range opts.BeforeTestCaseHookDefinitions {
 		steps = append(steps, &TestCasePreparedStep{
-			ActionLocation: testCaseHookDefinitionToLocation(def),
+			ActionLocation: def.Location(),
 		})
 	}
 	for stepIndex, step := range opts.Pickle.Steps {
 		eventStep := &TestCasePreparedStep{
-			SourceLocation: pickleStepToLocation(step, opts.URI),
+			SourceLocation: dto.NewLocationForPickleStep(step, opts.URI),
 		}
 		if len(opts.StepIndexToStepDefinitions[stepIndex]) == 1 {
-			eventStep.ActionLocation = stepDefinitionToLocation(opts.StepIndexToStepDefinitions[stepIndex][0])
+			eventStep.ActionLocation = opts.StepIndexToStepDefinitions[stepIndex][0].Location()
 		}
 		steps = append(steps, eventStep)
 	}
 	for _, def := range opts.AfterTestCaseHookDefinitions {
 		steps = append(steps, &TestCasePreparedStep{
-			ActionLocation: testCaseHookDefinitionToLocation(def),
+			ActionLocation: def.Location(),
 		})
 	}
 	return &TestCasePrepared{
-		SourceLocation: pickleToLocation(opts.Pickle, opts.URI),
+		SourceLocation: dto.NewLocationForPickle(opts.Pickle, opts.URI),
 		Steps:          steps,
 	}
 }

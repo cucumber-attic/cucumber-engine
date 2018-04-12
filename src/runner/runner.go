@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"math/rand"
+
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
@@ -144,6 +146,9 @@ func (r *Runner) getAcceptedPickleEvents(featuresConfig *dto.FeaturesConfig) ([]
 			}
 		}
 	}
+	if featuresConfig.Order.Type == dto.FeaturesOrderTypeRandom {
+		reorderPickleEvents(acceptedPickleEvents, featuresConfig.Order.Seed)
+	}
 	return acceptedPickleEvents, nil
 }
 
@@ -161,4 +166,13 @@ func (r *Runner) shouldCauseFailure(status dto.Status, isStrict bool) bool {
 		status == dto.StatusFailed ||
 		status == dto.StatusUndefined ||
 		(status == dto.StatusPending && isStrict)
+}
+
+func reorderPickleEvents(pickleEvents []*gherkin.PickleEvent, seed int64) {
+	seededRand := rand.New(rand.NewSource(seed))
+	N := len(pickleEvents)
+	for i := 0; i < N; i++ {
+		j := i + seededRand.Intn(N-i)
+		pickleEvents[j], pickleEvents[i] = pickleEvents[i], pickleEvents[j]
+	}
 }

@@ -84,17 +84,17 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCasePrepared{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
 					Steps: []*event.TestCasePreparedStep{
 						{
-							SourceLocation: &event.Location{
+							SourceLocation: &dto.Location{
 								URI:  "/path/to/feature",
 								Line: 2,
 							},
-							ActionLocation: &event.Location{
+							ActionLocation: &dto.Location{
 								URI:  "/path/to/steps",
 								Line: 3,
 							},
@@ -108,7 +108,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[1]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseStarted{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
@@ -128,8 +128,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestStepStarted{
 					Index: 0,
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -158,8 +158,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Event: &event.TestStepFinished{
 					Index:  0,
 					Result: &dto.TestResult{Duration: 9, Status: dto.StatusPassed},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -172,7 +172,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
@@ -273,8 +273,8 @@ var _ = Describe("TestCaseRunner", func() {
 						Duration: 8,
 						Message:  "error message and stacktrace",
 					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -287,7 +287,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
@@ -383,13 +383,13 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCasePrepared{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
 					Steps: []*event.TestCasePreparedStep{
 						{
-							SourceLocation: &event.Location{
+							SourceLocation: &dto.Location{
 								URI:  "/path/to/feature",
 								Line: 2,
 							},
@@ -408,8 +408,8 @@ var _ = Describe("TestCaseRunner", func() {
 						Status:  dto.StatusAmbiguous,
 						Message: expectedMessage,
 					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -422,7 +422,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
@@ -581,13 +581,13 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCasePrepared{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
 					Steps: []*event.TestCasePreparedStep{
 						{
-							SourceLocation: &event.Location{
+							SourceLocation: &dto.Location{
 								URI:  "/path/to/feature",
 								Line: 2,
 							},
@@ -618,8 +618,8 @@ var _ = Describe("TestCaseRunner", func() {
 						Status:  dto.StatusUndefined,
 						Message: resultMessage,
 					},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -632,7 +632,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
 				Type: dto.CommandTypeEvent,
 				Event: &event.TestCaseFinished{
-					SourceLocation: &event.Location{
+					SourceLocation: &dto.Location{
 						URI:  "/path/to/feature",
 						Line: 1,
 					},
@@ -735,8 +735,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Event: &event.TestStepFinished{
 					Index:  1,
 					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -827,8 +827,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Event: &event.TestStepFinished{
 					Index:  0,
 					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -843,8 +843,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Event: &event.TestStepFinished{
 					Index:  1,
 					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},
@@ -859,8 +859,8 @@ var _ = Describe("TestCaseRunner", func() {
 				Event: &event.TestStepFinished{
 					Index:  2,
 					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &event.TestCase{
-						SourceLocation: &event.Location{
+					TestCase: &dto.TestCase{
+						SourceLocation: &dto.Location{
 							URI:  "/path/to/feature",
 							Line: 1,
 						},

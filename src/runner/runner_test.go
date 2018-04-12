@@ -169,27 +169,27 @@ var _ = Describe("Runner", func() {
 			}
 			Expect(testCasePreparedEvents).To(HaveLen(2))
 			Expect(testCasePreparedEvents[0]).To(Equal(&event.TestCasePrepared{
-				SourceLocation: &event.Location{
+				SourceLocation: &dto.Location{
 					Line: 2,
 					URI:  featurePath,
 				},
 				Steps: []*event.TestCasePreparedStep{
-					{ActionLocation: &event.Location{Line: 11, URI: "hooks.js"}},
-					{SourceLocation: &event.Location{Line: 3, URI: featurePath}},
-					{ActionLocation: &event.Location{Line: 14, URI: "hooks.js"}},
+					{ActionLocation: &dto.Location{Line: 11, URI: "hooks.js"}},
+					{SourceLocation: &dto.Location{Line: 3, URI: featurePath}},
+					{ActionLocation: &dto.Location{Line: 14, URI: "hooks.js"}},
 				},
 			}))
 			Expect(testCasePreparedEvents[1]).To(Equal(&event.TestCasePrepared{
-				SourceLocation: &event.Location{
+				SourceLocation: &dto.Location{
 					Line: 6,
 					URI:  featurePath,
 				},
 				Steps: []*event.TestCasePreparedStep{
-					{ActionLocation: &event.Location{Line: 11, URI: "hooks.js"}},
-					{ActionLocation: &event.Location{Line: 12, URI: "hooks.js"}},
-					{SourceLocation: &event.Location{Line: 7, URI: featurePath}},
-					{ActionLocation: &event.Location{Line: 13, URI: "hooks.js"}},
-					{ActionLocation: &event.Location{Line: 14, URI: "hooks.js"}},
+					{ActionLocation: &dto.Location{Line: 11, URI: "hooks.js"}},
+					{ActionLocation: &dto.Location{Line: 12, URI: "hooks.js"}},
+					{SourceLocation: &dto.Location{Line: 7, URI: featurePath}},
+					{ActionLocation: &dto.Location{Line: 13, URI: "hooks.js"}},
+					{ActionLocation: &dto.Location{Line: 14, URI: "hooks.js"}},
 				},
 			}))
 		})

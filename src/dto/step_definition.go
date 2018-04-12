@@ -18,3 +18,11 @@ type StepDefinition struct {
 	URI        string
 	Line       int
 }
+
+// Location returns a Location for the step defio
+func (s *StepDefinition) Location() *Location {
+	return &Location{
+		URI:  s.URI,
+		Line: s.Line,
+	}
+}

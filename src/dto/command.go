@@ -1,6 +1,8 @@
 package dto
 
-import gherkin "github.com/cucumber/gherkin-go"
+import (
+	gherkin "github.com/cucumber/gherkin-go"
+)
 
 // Command is a the struct used to communicate between this process and the calling process
 type Command struct {
@@ -23,6 +25,9 @@ type Command struct {
 	// Used for type "initialize_test_case", "run before/after test case hook",
 	// and "run test step"
 	TestCaseID string `json:"testCaseId"`
+
+	// Used for type "initialize_test_case"
+	TestCase *TestCase `json:"testCase"`
 
 	// Used for type "run before/after test case hook"
 	TestCaseHookDefinitionID string `json:"testCaseHookDefinitionId"`

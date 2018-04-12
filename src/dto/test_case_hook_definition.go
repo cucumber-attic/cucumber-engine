@@ -18,3 +18,11 @@ type TestCaseHookDefinition struct {
 	URI           string
 	Line          int
 }
+
+// Location returns a Location for the test case hook definition
+func (t *TestCaseHookDefinition) Location() *Location {
+	return &Location{
+		URI:  t.URI,
+		Line: t.Line,
+	}
+}
