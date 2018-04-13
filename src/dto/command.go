@@ -40,10 +40,10 @@ type Command struct {
 	PickleArguments []gherkin.Argument `json:"pickleArguments"`
 
 	// Used for type "generate snippet"
-	GeneratedExpressions []*GeneratedExpression `json:"generateExpression"`
+	GeneratedExpressions []*GeneratedExpression `json:"generatedExpressions"`
 
 	// Used for type "action complete" when action was "generate_snippet"
-	Snippet string `json:"string"`
+	Snippet string `json:"snippet"`
 
 	// Used for type "event"
 	Event interface{} `json:"event"`

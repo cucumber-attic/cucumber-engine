@@ -16,7 +16,7 @@ This command is sent by the program asking the caller to generate a step definit
   ],
 
   // gherkin step arguments (data table / doc string)
-  arguments: [],
+  pickleArguments: [],
 
 }
 ```
