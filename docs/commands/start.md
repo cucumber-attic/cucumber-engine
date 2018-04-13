@@ -34,6 +34,9 @@ This command should be sent from the calling program immediately
       },
     },
 
+    // the default language of feature files
+    language: "",
+
     // what order to run scenarios in
     order: {
       // "defined" or "random"

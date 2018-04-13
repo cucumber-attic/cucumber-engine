@@ -28,6 +28,8 @@ var _ = Describe("Runner", func() {
 					&dto.FeaturesConfig{
 						AbsolutePaths: []string{featurePath},
 						Filters:       &dto.FeaturesFilterConfig{},
+						Language:      "en",
+						Order:         &dto.FeaturesOrder{},
 					},
 					&dto.RuntimeConfig{},
 					&dto.SupportCodeConfig{},
@@ -90,6 +92,8 @@ var _ = Describe("Runner", func() {
 					Filters: &dto.FeaturesFilterConfig{
 						TagExpression: "@tagA",
 					},
+					Language: "en",
+					Order:    &dto.FeaturesOrder{},
 				},
 				&dto.RuntimeConfig{},
 				&dto.SupportCodeConfig{},
@@ -120,6 +124,8 @@ var _ = Describe("Runner", func() {
 				&dto.FeaturesConfig{
 					AbsolutePaths: []string{featurePath},
 					Filters:       &dto.FeaturesFilterConfig{},
+					Language:      "en",
+					Order:         &dto.FeaturesOrder{},
 				},
 				&dto.RuntimeConfig{},
 				&dto.SupportCodeConfig{

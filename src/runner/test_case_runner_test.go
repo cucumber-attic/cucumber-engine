@@ -120,6 +120,12 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(allCommandsSent[2]).To(Equal(&dto.Command{
 				Type:       dto.CommandTypeInitializeTestCase,
 				TestCaseID: "testCase1",
+				TestCase: &dto.TestCase{
+					SourceLocation: &dto.Location{
+						URI:  "/path/to/feature",
+						Line: 1,
+					},
+				},
 			}))
 		})
 

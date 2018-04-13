@@ -121,7 +121,7 @@ func (r *Runner) getAcceptedPickleEvents(featuresConfig *dto.FeaturesConfig) ([]
 	if err != nil {
 		return nil, err
 	}
-	gherkinEvents, err := gherkin.GherkinEvents(featuresConfig.AbsolutePaths...)
+	gherkinEvents, err := gherkin.GherkinEventsForLanguage(featuresConfig.AbsolutePaths, featuresConfig.Language)
 	if err != nil {
 		return nil, err
 	}
