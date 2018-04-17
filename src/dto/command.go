@@ -14,7 +14,8 @@ type Command struct {
 
 	// Used for type "action complete" when action was
 	//   "run before/after test case hook" or "run test step"
-	HookOrStepResult *TestResult `json:"hookOrStepResult"`
+	// and for type "run after test case hook"
+	Result *TestResult `json:"result"`
 
 	// Used for type "start"
 	BaseDirectory     string             `json:"baseDirectory"`
@@ -27,7 +28,8 @@ type Command struct {
 	TestCaseID string `json:"testCaseId"`
 
 	// Used for type "initialize_test_case"
-	TestCase *TestCase `json:"testCase"`
+	TestCase *TestCase       `json:"testCase"`
+	Pickle   *gherkin.Pickle `json:"pickle"`
 
 	// Used for type "run before/after test case hook"
 	TestCaseHookDefinitionID string `json:"testCaseHookDefinitionId"`

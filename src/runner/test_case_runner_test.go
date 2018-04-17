@@ -13,6 +13,7 @@ import (
 var _ = Describe("TestCaseRunner", func() {
 	Context("with a passing step", func() {
 		var allCommandsSent []*dto.Command
+		var pickle *gherkin.Pickle
 		var result *dto.TestResult
 
 		BeforeEach(func() {
@@ -25,7 +26,7 @@ var _ = Describe("TestCaseRunner", func() {
 				if command.Type == dto.CommandTypeRunTestStep {
 					return &dto.Command{
 						Type: dto.CommandTypeActionComplete,
-						HookOrStepResult: &dto.TestResult{
+						Result: &dto.TestResult{
 							Status:   dto.StatusPassed,
 							Duration: 9,
 						},
@@ -49,17 +50,18 @@ var _ = Describe("TestCaseRunner", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
-						{
-							Locations: []gherkin.Location{{Line: 2}},
-							Text:      "I have 100 cukes",
-						},
+			pickle = &gherkin.Pickle{
+				Locations: []gherkin.Location{{Line: 1}},
+				Steps: []*gherkin.PickleStep{
+					{
+						Locations: []gherkin.Location{{Line: 2}},
+						Text:      "I have 100 cukes",
 					},
 				},
+			}
+			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
+				ID:                          "testCase1",
+				Pickle:                      pickle,
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
@@ -126,6 +128,7 @@ var _ = Describe("TestCaseRunner", func() {
 						Line: 1,
 					},
 				},
+				Pickle: pickle,
 			}))
 		})
 
@@ -205,7 +208,7 @@ var _ = Describe("TestCaseRunner", func() {
 				if command.Type == dto.CommandTypeRunTestStep {
 					return &dto.Command{
 						Type: dto.CommandTypeActionComplete,
-						HookOrStepResult: &dto.TestResult{
+						Result: &dto.TestResult{
 							Status:   dto.StatusFailed,
 							Duration: 8,
 							Message:  "error message and stacktrace",
@@ -524,7 +527,6 @@ var _ = Describe("TestCaseRunner", func() {
 		var allCommandsSent []*dto.Command
 		var result *dto.TestResult
 		var snippet = "snippet line1\nsnippet line2\nsnippet line3"
-		var resultMessage = "Undefined. Implement with the following snippet:\n\n  snippet line1\n  snippet line2\n  snippet line3"
 
 		BeforeEach(func() {
 			allCommandsSent = []*dto.Command{}
@@ -568,7 +570,7 @@ var _ = Describe("TestCaseRunner", func() {
 		It("returns a undefined result", func() {
 			Expect(result).To(Equal(&dto.TestResult{
 				Status:  dto.StatusUndefined,
-				Message: resultMessage,
+				Message: snippet,
 			}))
 		})
 
@@ -622,7 +624,7 @@ var _ = Describe("TestCaseRunner", func() {
 					Index: 0,
 					Result: &dto.TestResult{
 						Status:  dto.StatusUndefined,
-						Message: resultMessage,
+						Message: snippet,
 					},
 					TestCase: &dto.TestCase{
 						SourceLocation: &dto.Location{
@@ -644,7 +646,7 @@ var _ = Describe("TestCaseRunner", func() {
 					},
 					Result: &dto.TestResult{
 						Status:  dto.StatusUndefined,
-						Message: resultMessage,
+						Message: snippet,
 					},
 				},
 			}))
@@ -665,7 +667,7 @@ var _ = Describe("TestCaseRunner", func() {
 				if command.Type == dto.CommandTypeRunTestStep {
 					return &dto.Command{
 						Type: dto.CommandTypeActionComplete,
-						HookOrStepResult: &dto.TestResult{
+						Result: &dto.TestResult{
 							Status:   dto.StatusFailed,
 							Duration: 8,
 							Message:  "error message and stacktrace",

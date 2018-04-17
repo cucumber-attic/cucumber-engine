@@ -1,9 +1,6 @@
 package runner
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
@@ -91,6 +88,7 @@ func (t *TestCaseRunner) Run() *dto.TestResult {
 			TestCase: &dto.TestCase{
 				SourceLocation: dto.NewLocationForPickle(t.pickle, t.uri),
 			},
+			Pickle: t.pickle,
 		})
 	}
 	for index, runHookOrStepFunc := range t.getRunHookAndStepFuncs() {
@@ -198,17 +196,17 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 		if t.isSkipped || (isBeforeHook && t.result.Status != dto.StatusPassed) {
 			return &dto.TestResult{Status: dto.StatusSkipped}
 		}
-		commandType := dto.CommandTypeRunAfterTestCaseHook
-		if isBeforeHook {
-			commandType = dto.CommandTypeRunBeforeTestCaseHook
-		}
-		// TODO also send the test case result
-		response := t.sendCommandAndAwaitResponse(&dto.Command{
-			Type:                     commandType,
+		command := &dto.Command{
+			Type:                     dto.CommandTypeRunBeforeTestCaseHook,
 			TestCaseID:               t.id,
 			TestCaseHookDefinitionID: hook.ID,
-		})
-		return response.HookOrStepResult
+		}
+		if !isBeforeHook {
+			command.Type = dto.CommandTypeRunAfterTestCaseHook
+			command.Result = t.result
+		}
+		response := t.sendCommandAndAwaitResponse(command)
+		return response.Result
 	}
 }
 
@@ -222,7 +220,7 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 			})
 			return &dto.TestResult{
 				Status:  dto.StatusUndefined,
-				Message: fmt.Sprintf("Undefined. Implement with the following snippet:\n\n  %s", strings.Replace(response.Snippet, "\n", "\n  ", -1)),
+				Message: response.Snippet,
 			}
 		}
 		if len(t.stepIndexToStepDefinitions[stepIndex]) > 1 {
@@ -248,6 +246,6 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *gherkin.PickleStep) fu
 			PatternMatches:   t.stepIndexToPatternMatches[stepIndex],
 			PickleArguments:  step.Arguments,
 		})
-		return response.HookOrStepResult
+		return response.Result
 	}
 }

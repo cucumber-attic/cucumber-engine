@@ -149,7 +149,7 @@ var _ = Describe("Runner", func() {
 						commandChan <- &dto.Command{
 							Type:       dto.CommandTypeActionComplete,
 							ResponseTo: command.ID,
-							HookOrStepResult: &dto.TestResult{
+							Result: &dto.TestResult{
 								Status: dto.StatusPassed,
 							},
 						}

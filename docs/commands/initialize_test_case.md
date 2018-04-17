@@ -9,5 +9,17 @@ This command is sent by the program asking the caller to initialize a test case.
   // id of the test case
   "testCaseId": "",
 
+  // test case to be used in test-step-attachment events
+  // optionally passed to hooks
+  "testCase": {
+    "sourceLocation": {
+      "line": 0,
+      "uri": ""
+    }
+  },
+
+  // gherkin pickle that can be optionally passed to hooks
+  "pickle": {}
+
 }
 ```
