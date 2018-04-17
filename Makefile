@@ -3,6 +3,14 @@
 build:
 	go install
 
+ci-publish-release: cross-compile
+	go get github.com/tcnksm/ghr
+	ghr -u cucumber -token "${GITHUB_TOKEN}" "${CIRCLE_TAG}" dist
+
+cross-compile:
+	go get github.com/mitchellh/gox
+	gox -ldflags "-X github.com/cucumber/cucumber-pickle-runner/src/cli.version=${CIRCLE_TAG}" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+
 fix-lint:
 	goimports -w src
 

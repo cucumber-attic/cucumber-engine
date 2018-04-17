@@ -3,14 +3,25 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"os"
 
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/runner"
 )
 
+var version string
+
+// Execute implements the command line interface
 func Execute() {
-	// id := uuid.NewV4().String()
+	versionFlag := flag.Bool("version", false, "print version")
+	debugFlag := flag.Bool("debug", false, "print debug information")
+	flag.Parse()
+	if *versionFlag {
+		fmt.Printf("cucumber-puckle-runner %s\n", version)
+		os.Exit(0)
+	}
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)
@@ -20,7 +31,9 @@ func Execute() {
 			if err != nil {
 				panic(err)
 			}
-			// fmt.Fprintln(os.Stderr, id+" shared Out: "+string(data))
+			if *debugFlag {
+				fmt.Fprintf(os.Stderr, "CPR OUT: %s\n", string(data))
+			}
 			os.Stdout.Write(append(data, []byte("\n")...))
 		}
 		done <- true
@@ -29,7 +42,9 @@ func Execute() {
 	for scanner.Scan() {
 		command := &dto.Command{}
 		data := scanner.Bytes()
-		// fmt.Fprintln(os.Stderr, id+" shared In: "+string(data))
+		if *debugFlag {
+			fmt.Fprintf(os.Stderr, "CPR IN: %s\n", string(data))
+		}
 		if err := json.Unmarshal(data, command); err != nil {
 			panic(err)
 		}
