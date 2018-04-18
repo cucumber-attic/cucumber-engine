@@ -1,7 +1,9 @@
 package runner
 
 import (
+	"fmt"
 	"math/rand"
+	"path/filepath"
 
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
@@ -54,7 +56,7 @@ func (r *Runner) sendCommand(command *dto.Command) {
 }
 
 func (r *Runner) start(command *dto.Command) {
-	acceptedPickleEvents, err := r.getAcceptedPickleEvents(command.FeaturesConfig)
+	acceptedPickleEvents, err := r.getAcceptedPickleEvents(command.BaseDirectory, command.FeaturesConfig)
 	if err != nil {
 		r.sendCommand(&dto.Command{
 			Type:  dto.CommandTypeError,
@@ -116,7 +118,7 @@ func (r *Runner) start(command *dto.Command) {
 	close(r.outgoingCommands)
 }
 
-func (r *Runner) getAcceptedPickleEvents(featuresConfig *dto.FeaturesConfig) ([]*gherkin.PickleEvent, error) {
+func (r *Runner) getAcceptedPickleEvents(baseDirectory string, featuresConfig *dto.FeaturesConfig) ([]*gherkin.PickleEvent, error) {
 	pickleFilter, err := NewPickleFilter(featuresConfig.Filters)
 	if err != nil {
 		return nil, err
@@ -131,6 +133,13 @@ func (r *Runner) getAcceptedPickleEvents(featuresConfig *dto.FeaturesConfig) ([]
 			Type:  "event",
 			Event: gherkinEvent,
 		})
+		if attachmentEvent, ok := gherkinEvent.(*gherkin.AttachmentEvent); ok && attachmentEvent.Media.Type == "text/x.cucumber.stacktrace+plain" {
+			uri, err := filepath.Rel(baseDirectory, attachmentEvent.Source.URI)
+			if err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("Parse error in '%s': %s", uri, attachmentEvent.Data)
+		}
 		if pickleEvent, ok := gherkinEvent.(*gherkin.PickleEvent); ok {
 			if pickleFilter.Matches(pickleEvent) {
 				r.sendCommand(&dto.Command{

@@ -30,3 +30,9 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
 #### Run linter / tests
 
 * `make spec`
+
+#### Release Process
+
+* Ensure the `CHANGELOG.md` is up to date
+* Tag the commit
+* A release will be created on CI
