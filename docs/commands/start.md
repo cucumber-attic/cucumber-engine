@@ -94,7 +94,7 @@ This command should be sent from the calling program immediately
           "type": ""
         },
 
-        // uri (absolute path) / line for where the hook was defined
+        // uri (absolute path) / line for where the step was defined
         "uri": "",
         "line": ""
       }

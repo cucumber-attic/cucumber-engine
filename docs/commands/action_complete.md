@@ -25,7 +25,7 @@ This command should be sent by the caller after completing an action.
   },
 
   // the snippet if the command was to generate a snippet
-  // `{{keyword}}` will be replaced by the proper step keyword in the formatters
+  // `{{keywordType}}` will be replaced by the proper step keyword (Given / When / Then) in the formatters
   "snippet": ""
 }
 ```
