@@ -6,5 +6,5 @@ It takes care of loading the features, filtering the pickles, and orchestrating 
 
 #### Links
 
-* [Usage](./docs/usage)
+* [Usage](./docs/usage.md)
 * [Contributing](./CONTRIBUTING.md)
