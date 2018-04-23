@@ -2,7 +2,9 @@
 
 ### Unreleased
 
-* Add `maxParallel` to runtime config to specify the number of tests cases that should be run in parallel 
+### v0.0.3 (2017-04-23)
+
+* Add `maxParallel` to runtime config to specify the number of tests cases that should be run in parallel
 
 ### v0.0.2 (2017-04-18)
 
