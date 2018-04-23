@@ -3,6 +3,7 @@ package runner_test
 import (
 	"path"
 	"runtime"
+	"time"
 
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
@@ -198,6 +199,125 @@ var _ = Describe("Runner", func() {
 					{ActionLocation: &dto.Location{Line: 14, URI: "hooks.js"}},
 				},
 			}))
+		})
+	})
+
+	Context("running in parallel with three pickles", func() {
+		featurePath := path.Join(rootDir, "test", "fixtures", "many.feature")
+		var allCommandsSent []*dto.Command
+
+		Context("maxParallel is 2", func() {
+			BeforeEach(func() {
+				allCommandsSent = runWithConfigAndResponder(
+					&dto.FeaturesConfig{
+						AbsolutePaths: []string{featurePath},
+						Filters:       &dto.FeaturesFilterConfig{},
+						Language:      "en",
+						Order:         &dto.FeaturesOrder{},
+					},
+					&dto.RuntimeConfig{
+						MaxParallel: 2,
+					},
+					&dto.SupportCodeConfig{},
+					func(commandChan chan *dto.Command, command *dto.Command) {
+						switch command.Type {
+						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+							}
+						case dto.CommandTypeInitializeTestCase:
+							time.Sleep(time.Millisecond * 100)
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+							}
+						case dto.CommandTypeGenerateSnippet:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+								Snippet:    "snippet",
+							}
+						}
+					},
+				)
+			})
+
+			It("runs exactly two test cases at once", func() {
+				maxRunning := 0
+				currentRunning := 0
+				for _, command := range allCommandsSent {
+					if command.Type == dto.CommandTypeInitializeTestCase {
+						currentRunning++
+						if currentRunning > maxRunning {
+							maxRunning = currentRunning
+						}
+					}
+					if command.Type == dto.CommandTypeEvent {
+						if _, ok := command.Event.(*event.TestCaseFinished); ok {
+							currentRunning--
+						}
+					}
+				}
+				Expect(maxRunning).To(Equal(2))
+			})
+		})
+
+		Context("maxParallel is -1", func() {
+			BeforeEach(func() {
+				allCommandsSent = runWithConfigAndResponder(
+					&dto.FeaturesConfig{
+						AbsolutePaths: []string{featurePath},
+						Filters:       &dto.FeaturesFilterConfig{},
+						Language:      "en",
+						Order:         &dto.FeaturesOrder{},
+					},
+					&dto.RuntimeConfig{
+						MaxParallel: -1,
+					},
+					&dto.SupportCodeConfig{},
+					func(commandChan chan *dto.Command, command *dto.Command) {
+						switch command.Type {
+						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+							}
+						case dto.CommandTypeInitializeTestCase:
+							time.Sleep(time.Millisecond * 100)
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+							}
+						case dto.CommandTypeGenerateSnippet:
+							commandChan <- &dto.Command{
+								Type:       dto.CommandTypeActionComplete,
+								ResponseTo: command.ID,
+								Snippet:    "snippet",
+							}
+						}
+					},
+				)
+			})
+
+			It("runs all test cases at once", func() {
+				maxRunning := 0
+				currentRunning := 0
+				for _, command := range allCommandsSent {
+					if command.Type == dto.CommandTypeInitializeTestCase {
+						currentRunning++
+						if currentRunning > maxRunning {
+							maxRunning = currentRunning
+						}
+					}
+					if command.Type == dto.CommandTypeEvent {
+						if _, ok := command.Event.(*event.TestCaseFinished); ok {
+							currentRunning--
+						}
+					}
+				}
+				Expect(maxRunning).To(Equal(5))
+			})
 		})
 	})
 })

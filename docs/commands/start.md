@@ -57,6 +57,11 @@ This command should be sent from the calling program immediately
     // if true, pending steps cause the test run to fail
     "isStrict": false,
 
+    // if -1, runs all test cases in parallel,
+    // if 0, 1 or undefined, runs the test cases sequentially
+    // otherwise specifies the number the can be run sequentially
+    maxParallel: 1,
+
   },
 
   "supportCodeConfig": {

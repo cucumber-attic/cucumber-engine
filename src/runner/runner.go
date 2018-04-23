@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"path/filepath"
+	"sync"
 
 	"github.com/cucumber/cucumber-pickle-runner/src/dto"
 	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
@@ -13,11 +14,12 @@ import (
 
 // Runner executes a run of cucumber
 type Runner struct {
-	incomingCommands chan *dto.Command
-	outgoingCommands chan *dto.Command
-	isStrict         bool
-	responseChannels map[string]chan *dto.Command
-	result           *dto.TestRunResult
+	incomingCommands     chan *dto.Command
+	outgoingCommands     chan *dto.Command
+	isStrict             bool
+	responseChannelMutex sync.RWMutex
+	responseChannels     map[string]chan *dto.Command
+	result               *dto.TestRunResult
 }
 
 // NewRunner creates a runner
@@ -46,9 +48,11 @@ func (r *Runner) receiveCommand(command *dto.Command) {
 		r.start(command)
 		return
 	}
+	r.responseChannelMutex.RLock()
 	if responseChannel, ok := r.responseChannels[command.ResponseTo]; ok {
 		responseChannel <- command
 	}
+	r.responseChannelMutex.RUnlock()
 }
 
 func (r *Runner) sendCommand(command *dto.Command) {
@@ -79,34 +83,26 @@ func (r *Runner) start(command *dto.Command) {
 	if len(acceptedPickleEvents) > 0 {
 		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunBeforeTestRunHooks})
 	}
-	testRunResult := &dto.TestRunResult{Success: true, Duration: 0}
-	isSkipped := command.RuntimeConfig.IsDryRun
-	for _, pickleEvent := range acceptedPickleEvents {
-		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
-			BaseDirectory:               command.BaseDirectory,
-			ID:                          uuid.NewV4().String(),
-			IsSkipped:                   isSkipped,
-			Pickle:                      pickleEvent.Pickle,
-			SendCommand:                 r.sendCommand,
-			SendCommandAndAwaitResponse: r.sendCommandAndAwaitResponse,
-			SupportCodeLibrary:          supportCodeLibrary,
-			URI:                         pickleEvent.URI,
+	var runTestCasesFunc func(*runTestCasesOptions) (*dto.TestRunResult, error)
+	if command.RuntimeConfig.MaxParallel == -1 || command.RuntimeConfig.MaxParallel > 1 {
+		runTestCasesFunc = RunTestCasesInParallel
+	} else {
+		runTestCasesFunc = RunTestCasesSequentially
+	}
+	testRunResult, err := runTestCasesFunc(&runTestCasesOptions{
+		baseDirectory:               command.BaseDirectory,
+		pickleEvents:                acceptedPickleEvents,
+		runtimeConfig:               command.RuntimeConfig,
+		sendCommand:                 r.sendCommand,
+		sendCommandAndAwaitResponse: r.sendCommandAndAwaitResponse,
+		supportCodeLibrary:          supportCodeLibrary,
+	})
+	if err != nil {
+		r.sendCommand(&dto.Command{
+			Type:  dto.CommandTypeError,
+			Error: err.Error(),
 		})
-		if err != nil {
-			r.sendCommand(&dto.Command{
-				Type:  dto.CommandTypeError,
-				Error: err.Error(),
-			})
-			return
-		}
-		testCaseResult := testCaseRunner.Run()
-		testRunResult.Duration += testCaseResult.Duration
-		if r.shouldCauseFailure(testCaseResult.Status, command.RuntimeConfig.IsStrict) {
-			testRunResult.Success = false
-			if !isSkipped && command.RuntimeConfig.IsFailFast {
-				isSkipped = true
-			}
-		}
+		return
 	}
 	if len(acceptedPickleEvents) > 0 {
 		_ = r.sendCommandAndAwaitResponse(&dto.Command{Type: dto.CommandTypeRunAfterTestRunHooks})
@@ -165,16 +161,15 @@ func (r *Runner) sendCommandAndAwaitResponse(command *dto.Command) *dto.Command 
 	id := uuid.NewV4().String()
 	command.ID = id
 	responseChannel := make(chan *dto.Command)
+	r.responseChannelMutex.Lock()
 	r.responseChannels[id] = responseChannel
+	r.responseChannelMutex.Unlock()
 	go r.sendCommand(command)
-	return <-responseChannel
-}
-
-func (r *Runner) shouldCauseFailure(status dto.Status, isStrict bool) bool {
-	return status == dto.StatusAmbiguous ||
-		status == dto.StatusFailed ||
-		status == dto.StatusUndefined ||
-		(status == dto.StatusPending && isStrict)
+	result := <-responseChannel
+	r.responseChannelMutex.Lock()
+	delete(r.responseChannels, id)
+	r.responseChannelMutex.Unlock()
+	return result
 }
 
 func reorderPickleEvents(pickleEvents []*gherkin.PickleEvent, seed int64) {
