@@ -8,9 +8,24 @@ import (
 	gherkin "github.com/cucumber/gherkin-go"
 )
 
+type TestStepAttachment struct {
+	Data string
+}
+
+type CompletedTestStep struct {
+	Attachments []dto.A
+}
+
+type CompletedTestCase struct {
+
+}
+
 type TestCaseData struct {
 	GherkinDocument  *gherkin.GherkinDocument
 	Pickle           *gherkin.Pickle
+	SourceLocation *dto.Location
+	Steps []*
+
 	TestCasePrepared *event.TestCasePrepared
 	TestCaseResult   *dto.TestResult
 }
@@ -40,6 +55,7 @@ func NewEventDataCollector(eventChannel chan gherkin.CucumberEvent) *EventDataCo
 			switch t := ev.(type) {
 			case *gherkin.GherkinDocumentEvent:
 				e.storeGherkinDocument(t)
+			case *gherkin.PickleEvent:
 			}
 		}
 	}()
@@ -71,6 +87,21 @@ func (e *EventDataCollector) GetTestStepData(testCaseSourceLocation *dto.Locatio
 
 func (e *EventDataCollector) storeGherkinDocument(ev *gherkin.GherkinDocumentEvent) {
 	e.gherkinDocumentMap[ev.URI] = ev.Document
+}
+
+func (e *EventDataCollector) storePickle(ev *gherkin.PickleEvent) {
+	key := getTestCaseKey(dto.NewLocationForPickle(ev.Pickle, ev.URI))
+	e.pickleMap[key] = ev.Pickle
+}
+
+func (e *EventDataCollector) storeTestCase(ev *event.TestCasePrepared) {
+	key := getTestCaseKey(ev.SourceLocation)
+	e.testCasePreparedMap[key] = ev
+}
+
+func (e *EventDataCollector) storeTestCaseResult(ev *event.TestCaseFinished) {
+	key := getTestCaseKey(ev.SourceLocation)
+	e.testCaseResultMap[key] = ev.Result
 }
 
 func getTestCaseKey(sourceLocation *dto.Location) string {
