@@ -125,7 +125,7 @@ var _ = Describe("FormatAsRerun", func() {
 	})
 
 	Describe("with two failing test cases in different files", func() {
-		It("outputs the references needed to rerun the test cases as muliplte elements", func() {
+		It("outputs the references needed to rerun the test cases as multiple elements", func() {
 			reader, writer := io.Pipe()
 			eventChannel := make(chan gherkin.CucumberEvent)
 			formatter.FormatAsRerun(&formatter.CommonOptions{
