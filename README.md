@@ -1,4 +1,4 @@
-# Cucumber Pickle Runner
+# Cucumber Engine
 
 [![CircleCI](https://circleci.com/gh/cucumber/cucumber-pickle-runner/tree/master.svg?style=svg)](https://circleci.com/gh/cucumber/cucumber-pickle-runner/tree/master)
 
