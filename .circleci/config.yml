@@ -1,6 +1,6 @@
 defaults:
   job_defaults: &job_defaults
-    working_directory: /go/src/github.com/cucumber/cucumber-pickle-runner
+    working_directory: /go/src/github.com/cucumber/cucumber-engine
     docker:
       - image: circleci/golang:1.10
   restore_glide_cache_step: &restore_glide_cache_step

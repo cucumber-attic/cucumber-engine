@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
-	"github.com/cucumber/cucumber-pickle-runner/src/runner"
+	"github.com/cucumber/cucumber-engine/src/dto"
+	"github.com/cucumber/cucumber-engine/src/runner"
 )
 
 var version string

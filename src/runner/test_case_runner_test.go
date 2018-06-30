@@ -1,10 +1,10 @@
 package runner_test
 
 import (
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
-	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
-	"github.com/cucumber/cucumber-pickle-runner/src/runner"
-	. "github.com/cucumber/cucumber-pickle-runner/test/matchers"
+	"github.com/cucumber/cucumber-engine/src/dto"
+	"github.com/cucumber/cucumber-engine/src/dto/event"
+	"github.com/cucumber/cucumber-engine/src/runner"
+	. "github.com/cucumber/cucumber-engine/test/matchers"
 	gherkin "github.com/cucumber/gherkin-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

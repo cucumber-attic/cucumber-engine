@@ -9,7 +9,7 @@ ci-publish-release: cross-compile
 
 cross-compile:
 	go get github.com/mitchellh/gox
-	gox -ldflags "-X github.com/cucumber/cucumber-pickle-runner/src/cli.version=${CIRCLE_TAG}" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+	gox -ldflags "-X github.com/cucumber/cucumber-engine/src/cli.version=${CIRCLE_TAG}" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 
 fix-lint:
 	goimports -w src

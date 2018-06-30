@@ -1,6 +1,6 @@
 # Cucumber Engine
 
-[![CircleCI](https://circleci.com/gh/cucumber/cucumber-pickle-runner/tree/master.svg?style=svg)](https://circleci.com/gh/cucumber/cucumber-pickle-runner/tree/master)
+[![CircleCI](https://circleci.com/gh/cucumber/cucumber-engine/tree/master.svg?style=svg)](https://circleci.com/gh/cucumber/cucumber-engine/tree/master)
 
 Shared go binary that can be used by all language implementations.
 

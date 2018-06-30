@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
-	"github.com/cucumber/cucumber-pickle-runner/src/dto/event"
+	"github.com/cucumber/cucumber-engine/src/dto"
+	"github.com/cucumber/cucumber-engine/src/dto/event"
 	gherkin "github.com/cucumber/gherkin-go"
 	uuid "github.com/satori/go.uuid"
 )

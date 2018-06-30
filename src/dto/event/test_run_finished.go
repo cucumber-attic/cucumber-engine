@@ -3,7 +3,7 @@ package event
 import (
 	"encoding/json"
 
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
+	"github.com/cucumber/cucumber-engine/src/dto"
 )
 
 // TestRunFinished is an event for when the test run finishes

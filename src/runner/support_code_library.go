@@ -4,7 +4,7 @@ import (
 	"regexp"
 
 	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
+	"github.com/cucumber/cucumber-engine/src/dto"
 	tagexpressions "github.com/cucumber/tag-expressions-go"
 )
 

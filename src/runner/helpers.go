@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/cucumber/cucumber-pickle-runner/src/dto"
+	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/olekukonko/tablewriter"
 )
 
