@@ -19,7 +19,7 @@ func Execute() {
 	debugFlag := flag.Bool("debug", false, "print debug information")
 	flag.Parse()
 	if *versionFlag {
-		fmt.Printf("cucumber-puckle-runner %s\n", version)
+		fmt.Printf("cucumber-engine %s\n", version)
 		os.Exit(0)
 	}
 	r := runner.NewRunner()
@@ -32,7 +32,7 @@ func Execute() {
 				panic(err)
 			}
 			if *debugFlag {
-				fmt.Fprintf(os.Stderr, "CPR OUT: %s\n", string(data))
+				fmt.Fprintf(os.Stderr, "cucumber-engine OUT: %s\n", string(data))
 			}
 			os.Stdout.Write(append(data, []byte("\n")...))
 		}
