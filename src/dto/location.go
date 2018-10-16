@@ -1,6 +1,6 @@
 package dto
 
-import gherkin "github.com/cucumber/gherkin-go"
+import "github.com/cucumber/gherkin-go"
 
 // Location is location information within a file
 type Location struct {

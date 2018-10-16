@@ -3,7 +3,7 @@ package event_test
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/dto/event"
-	gherkin "github.com/cucumber/gherkin-go"
+	"github.com/cucumber/gherkin-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

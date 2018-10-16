@@ -1,6 +1,6 @@
 package dto
 
-import tagexpressions "github.com/cucumber/tag-expressions-go"
+import "github.com/cucumber/tag-expressions-go"
 
 // TestCaseHookDefinitionConfig is hook that run before or after a test case
 type TestCaseHookDefinitionConfig struct {

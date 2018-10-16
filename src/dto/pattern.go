@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
+	"github.com/cucumber/cucumber-expressions-go"
 )
 
 // Pattern is how the step definition matches text

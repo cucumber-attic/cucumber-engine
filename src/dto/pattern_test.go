@@ -1,8 +1,8 @@
 package dto_test
 
 import (
-	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
 	"github.com/cucumber/cucumber-engine/src/dto"
+	"github.com/cucumber/cucumber-expressions-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

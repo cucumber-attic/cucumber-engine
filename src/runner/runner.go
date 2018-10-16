@@ -8,8 +8,8 @@ import (
 
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/dto/event"
-	gherkin "github.com/cucumber/gherkin-go"
-	uuid "github.com/satori/go.uuid"
+	"github.com/cucumber/gherkin-go"
+	"github.com/satori/go.uuid"
 )
 
 // Runner executes a run of cucumber
@@ -123,7 +123,7 @@ func (r *Runner) getAcceptedPickleEvents(baseDirectory string, featuresConfig *d
 	if err != nil {
 		return nil, err
 	}
-	acceptedPickleEvents := []*gherkin.PickleEvent{}
+	var acceptedPickleEvents []*gherkin.PickleEvent
 	for _, gherkinEvent := range gherkinEvents {
 		r.sendCommand(&dto.Command{
 			Type:  "event",

@@ -3,7 +3,7 @@ package runner_test
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/runner"
-	gherkin "github.com/cucumber/gherkin-go"
+	"github.com/cucumber/gherkin-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

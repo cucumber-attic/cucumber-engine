@@ -1,6 +1,6 @@
 package dto
 
-import cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
+import "github.com/cucumber/cucumber-expressions-go"
 
 // StepDefinitionConfig is the implementation of a step
 type StepDefinitionConfig struct {

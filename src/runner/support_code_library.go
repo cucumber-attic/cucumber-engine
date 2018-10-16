@@ -3,9 +3,9 @@ package runner
 import (
 	"regexp"
 
-	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
 	"github.com/cucumber/cucumber-engine/src/dto"
-	tagexpressions "github.com/cucumber/tag-expressions-go"
+	"github.com/cucumber/cucumber-expressions-go"
+	"github.com/cucumber/tag-expressions-go"
 )
 
 // SupportCodeLibrary represents the support code for the test run
@@ -55,7 +55,7 @@ func (s *SupportCodeLibrary) GetMatchingBeforeTestCaseHookDefinitions(tagNames [
 // GetMatchingStepDefinitions returns the StepDefinitions that match the given text
 //   the pattern matches are only returned if a single step definition matches
 func (s *SupportCodeLibrary) GetMatchingStepDefinitions(text string) ([]*dto.StepDefinition, []*dto.PatternMatch, error) {
-	stepDefinitions := []*dto.StepDefinition{}
+	var stepDefinitions []*dto.StepDefinition
 	var patternMatches []*dto.PatternMatch
 	for _, def := range s.stepDefinitions {
 		args, err := def.Expression.Match(text)
@@ -100,7 +100,7 @@ func (s *SupportCodeLibrary) GenerateExpressions(text string) []*dto.GeneratedEx
 }
 
 func filterHookDefinitions(hookDefinitions []*dto.TestCaseHookDefinition, tagNames []string) []*dto.TestCaseHookDefinition {
-	result := []*dto.TestCaseHookDefinition{}
+	var result []*dto.TestCaseHookDefinition
 	for _, hookDefinition := range hookDefinitions {
 		if hookDefinition.TagExpression.Evaluate(tagNames) {
 			result = append(result, hookDefinition)

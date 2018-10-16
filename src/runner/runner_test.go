@@ -9,7 +9,7 @@ import (
 	"github.com/cucumber/cucumber-engine/src/dto/event"
 	"github.com/cucumber/cucumber-engine/src/runner"
 	. "github.com/cucumber/cucumber-engine/test/matchers"
-	gherkin "github.com/cucumber/gherkin-go"
+	"github.com/cucumber/gherkin-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -166,7 +166,7 @@ var _ = Describe("Runner", func() {
 		})
 
 		It("runs test case hooks only for pickles that match the tag expression", func() {
-			testCasePreparedEvents := []*event.TestCasePrepared{}
+			var testCasePreparedEvents []*event.TestCasePrepared
 			for _, command := range allCommandsSent {
 				if command.Type == dto.CommandTypeEvent {
 					if testCasePreparedEvent, ok := command.Event.(*event.TestCasePrepared); ok {
@@ -323,7 +323,7 @@ var _ = Describe("Runner", func() {
 })
 
 func runWithConfigAndResponder(featuresConfig *dto.FeaturesConfig, runtimeConfig *dto.RuntimeConfig, supportCodeConfig *dto.SupportCodeConfig, responder func(chan *dto.Command, *dto.Command)) []*dto.Command {
-	allCommandsSent := []*dto.Command{}
+	var allCommandsSent []*dto.Command
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)

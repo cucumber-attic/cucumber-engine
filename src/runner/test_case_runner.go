@@ -3,7 +3,7 @@ package runner
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/dto/event"
-	gherkin "github.com/cucumber/gherkin-go"
+	"github.com/cucumber/gherkin-go"
 )
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
@@ -114,7 +114,7 @@ func (t *TestCaseRunner) updateResult(hookOrStepResult *dto.TestResult) {
 func (t *TestCaseRunner) shouldUpdateResultStatus(hookOrStepResult *dto.TestResult) bool {
 	switch hookOrStepResult.Status {
 	case dto.StatusFailed, dto.StatusAmbiguous:
-		return t.result.Status != dto.StatusFailed || t.result.Status != dto.StatusAmbiguous
+		return true
 	default:
 		return t.result.Status == dto.StatusPassed || t.result.Status == dto.StatusSkipped
 	}

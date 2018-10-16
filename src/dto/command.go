@@ -1,7 +1,7 @@
 package dto
 
 import (
-	gherkin "github.com/cucumber/gherkin-go"
+	"github.com/cucumber/gherkin-go"
 )
 
 // Command is a the struct used to communicate between this process and the calling process
