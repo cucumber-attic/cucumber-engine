@@ -1,7 +1,7 @@
 module github.com/cucumber/cucumber-engine
 
 require (
-	github.com/cucumber/cucumber-expressions-go v0.0.0-20180405043721-710012644754
+	github.com/cucumber/cucumber-expressions-go v6.1.2+incompatible
 	github.com/cucumber/gherkin-go v5.1.0+incompatible
 	github.com/cucumber/tag-expressions-go v0.0.0-20180924203731-65e83e24be41
 	github.com/hpcloud/tail v1.0.0 // indirect

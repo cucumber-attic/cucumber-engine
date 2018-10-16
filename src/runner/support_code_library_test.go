@@ -161,8 +161,11 @@ var _ = Describe("SupportCodeLibrary", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stepDefinitions).To(HaveLen(1))
 				Expect(stepDefinitions[0].ID).To(Equal("step1"))
+
+				stringPtr := new(string)
+				*stringPtr = "10"
 				Expect(patternMatch).To(Equal([]*dto.PatternMatch{
-					{Captures: []string{"10"}, ParameterTypeName: "int"},
+					{Captures: []*string{stringPtr}, ParameterTypeName: "int"},
 				}))
 			})
 		})

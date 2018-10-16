@@ -148,13 +148,16 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the run test step command", func() {
+			stringPtr := new(string)
+			*stringPtr = "100"
+
 			Expect(allCommandsSent[4]).To(Equal(&dto.Command{
 				Type:             dto.CommandTypeRunTestStep,
 				TestCaseID:       "testCase1",
 				StepDefinitionID: "step1",
 				PatternMatches: []*dto.PatternMatch{
 					{
-						Captures:          []string{"100"},
+						Captures:          []*string{stringPtr},
 						ParameterTypeName: "int",
 					},
 				},

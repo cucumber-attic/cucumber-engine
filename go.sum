@@ -1,5 +1,7 @@
 github.com/cucumber/cucumber-expressions-go v0.0.0-20180405043721-710012644754 h1:s7gayWGgbRwdzTg9MbFt+E5Ug2UUwe+QFzuNzPV7GqY=
 github.com/cucumber/cucumber-expressions-go v0.0.0-20180405043721-710012644754/go.mod h1:KP9wgNsfe4h1DNNnQOMCxYnVorV/k0NommVk+J6bmkk=
+github.com/cucumber/cucumber-expressions-go v6.1.2+incompatible h1:FHrfX1SAR8V7pPOLb24/tLfA4r2amM3/dddIslgqpwU=
+github.com/cucumber/cucumber-expressions-go v6.1.2+incompatible/go.mod h1:KP9wgNsfe4h1DNNnQOMCxYnVorV/k0NommVk+J6bmkk=
 github.com/cucumber/gherkin-go v5.1.0+incompatible h1:RCvyVI6KQLI2IJkijZBeJcE4K3U7DnhQ1RjD7VV+AIk=
 github.com/cucumber/gherkin-go v5.1.0+incompatible/go.mod h1:bYJ65F+CDEAL70FXAu7/ef4ayC/NhRXO8zEW3IB21w0=
 github.com/cucumber/tag-expressions-go v0.0.0-20180924203731-65e83e24be41 h1:F/dpjyK12XGQAJk22+VgQy4o/S9XVl+a2OeF4aQEv0M=
