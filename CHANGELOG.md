@@ -2,6 +2,10 @@
 
 ### Unreleased
 
+### v0.0.5 (2019-04-13)
+
+* No consumer facing changes
+
 ### v0.0.4 (2019-04-13)
 
 * Update to using cucumber-messages and Go 1.11 modules
