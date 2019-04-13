@@ -285,7 +285,6 @@ var _ = Describe("Runner", func() {
 						case *messages.Wrapper_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
 						case *messages.Wrapper_CommandGenerateSnippet:
-							time.Sleep(100 * time.Millisecond)
 							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
@@ -320,8 +319,10 @@ var _ = Describe("Runner", func() {
 						case *messages.Wrapper_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
 						case *messages.Wrapper_CommandGenerateSnippet:
-							time.Sleep(100 * time.Millisecond)
-							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
+							go func() {
+								time.Sleep(time.Second)
+								commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
+							}()
 						}
 					},
 				)
