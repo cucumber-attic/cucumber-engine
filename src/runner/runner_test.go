@@ -3,6 +3,7 @@ package runner_test
 import (
 	"path"
 	"runtime"
+	"time"
 
 	"github.com/cucumber/cucumber-engine/src/runner"
 	helpers "github.com/cucumber/cucumber-engine/test/helpers"
@@ -284,6 +285,7 @@ var _ = Describe("Runner", func() {
 						case *messages.Wrapper_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
 						case *messages.Wrapper_CommandGenerateSnippet:
+							time.Sleep(100 * time.Millisecond)
 							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
@@ -318,6 +320,7 @@ var _ = Describe("Runner", func() {
 						case *messages.Wrapper_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
 						case *messages.Wrapper_CommandGenerateSnippet:
+							time.Sleep(100 * time.Millisecond)
 							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
