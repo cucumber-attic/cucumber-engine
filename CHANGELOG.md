@@ -2,6 +2,10 @@
 
 ### Unreleased
 
+### v0.0.6 (2019-04-13)
+
+* No consumer facing changes
+
 ### v0.0.5 (2019-04-13)
 
 * No consumer facing changes
