@@ -1,70 +1,45 @@
 package event
 
 import (
-	"encoding/json"
-
 	"github.com/cucumber/cucumber-engine/src/dto"
-	gherkin "github.com/cucumber/gherkin-go"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 )
-
-// TestCasePreparedStep is the location information for a step / hook
-type TestCasePreparedStep struct {
-	SourceLocation *dto.Location `json:"sourceLocation"`
-	ActionLocation *dto.Location `json:"actionLocation"`
-}
-
-// TestCasePrepared is an event for when a test case has computed what steps and hooks will run
-type TestCasePrepared struct {
-	SourceLocation *dto.Location
-	Steps          []*TestCasePreparedStep
-}
-
-// MarshalJSON is the custom JSON marshalling to add the event type
-func (t *TestCasePrepared) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&struct {
-		SourceLocation *dto.Location           `json:"sourceLocation"`
-		Steps          []*TestCasePreparedStep `json:"steps"`
-		Type           string                  `json:"type"`
-	}{
-		SourceLocation: t.SourceLocation,
-		Steps:          t.Steps,
-		Type:           "test-case-prepared",
-	})
-}
 
 // NewTestCasePreparedOptions are the options for NewTestCasePrepared
 type NewTestCasePreparedOptions struct {
-	Pickle                        *gherkin.Pickle
-	URI                           string
+	Pickle                        *messages.Pickle
 	BeforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
 	AfterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
 	StepIndexToStepDefinitions    [][]*dto.StepDefinition
 }
 
 // NewTestCasePrepared creates a TestCasePrepared
-func NewTestCasePrepared(opts NewTestCasePreparedOptions) *TestCasePrepared {
-	var steps []*TestCasePreparedStep
+func NewTestCasePrepared(opts NewTestCasePreparedOptions) *messages.TestCasePrepared {
+	var steps []*messages.TestCasePreparedStep
 	for _, def := range opts.BeforeTestCaseHookDefinitions {
-		steps = append(steps, &TestCasePreparedStep{
-			ActionLocation: def.Location(),
+		steps = append(steps, &messages.TestCasePreparedStep{
+			ActionLocation: def.Config.Location,
 		})
 	}
 	for stepIndex, step := range opts.Pickle.Steps {
-		eventStep := &TestCasePreparedStep{
-			SourceLocation: dto.NewLocationForPickleStep(step, opts.URI),
+		eventStep := &messages.TestCasePreparedStep{
+			SourceLocation: &messages.SourceReference{
+				Uri:      opts.Pickle.Uri,
+				Location: step.Locations[len(step.Locations)-1],
+			},
 		}
 		if len(opts.StepIndexToStepDefinitions[stepIndex]) == 1 {
-			eventStep.ActionLocation = opts.StepIndexToStepDefinitions[stepIndex][0].Location()
+			eventStep.ActionLocation = opts.StepIndexToStepDefinitions[stepIndex][0].Config.Location
 		}
 		steps = append(steps, eventStep)
 	}
 	for _, def := range opts.AfterTestCaseHookDefinitions {
-		steps = append(steps, &TestCasePreparedStep{
-			ActionLocation: def.Location(),
+		steps = append(steps, &messages.TestCasePreparedStep{
+			ActionLocation: def.Config.Location,
 		})
 	}
-	return &TestCasePrepared{
-		SourceLocation: dto.NewLocationForPickle(opts.Pickle, opts.URI),
-		Steps:          steps,
+	return &messages.TestCasePrepared{
+		PickleId: opts.Pickle.Name, // TODO fix
+		Steps:    steps,
 	}
 }

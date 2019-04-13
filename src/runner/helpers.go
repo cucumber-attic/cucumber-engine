@@ -19,8 +19,9 @@ func getAmbiguousStepDefinitionsMessage(stepDefinitions []*dto.StepDefinition, b
 	data := [][]string{}
 	for _, stepDefinition := range stepDefinitions {
 		location := ""
-		if (stepDefinition.Line != 0) && stepDefinition.URI != "" {
-			uri := stepDefinition.URI
+		sourceReference := stepDefinition.Config.GetLocation()
+		if (sourceReference.GetLocation().GetLine() != 0) && sourceReference.GetUri() != "" {
+			uri := sourceReference.GetUri()
 			if baseDirectory != "" {
 				var err error
 				uri, err = filepath.Rel(baseDirectory, uri)
@@ -28,7 +29,7 @@ func getAmbiguousStepDefinitionsMessage(stepDefinitions []*dto.StepDefinition, b
 					return "", err
 				}
 			}
-			location = fmt.Sprintf("%s:%d", uri, stepDefinition.Line)
+			location = fmt.Sprintf("%s:%d", uri, sourceReference.GetLocation().GetLine())
 		}
 		data = append(data, []string{"'" + stepDefinition.Expression.Source() + "'", location})
 	}

@@ -1,8 +1,8 @@
 package runner_test
 
 import (
-	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/runner"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -11,8 +11,8 @@ var _ = Describe("SupportCodeLibrary", func() {
 	var library *runner.SupportCodeLibrary
 
 	It("returns err on invalid after hook tag expression", func() {
-		_, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-			AfterTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
+		_, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+			AfterTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
 				{TagExpression: "@tagA @tagB"},
 			},
 		})
@@ -20,8 +20,8 @@ var _ = Describe("SupportCodeLibrary", func() {
 	})
 
 	It("returns err on invalid before hook tag expression", func() {
-		_, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-			BeforeTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
+		_, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+			BeforeTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
 				{TagExpression: "@tagA @tagB"},
 			},
 		})
@@ -29,17 +29,22 @@ var _ = Describe("SupportCodeLibrary", func() {
 	})
 
 	It("returns err on invalid step pattern", func() {
-		_, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-			StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-				{Pattern: dto.Pattern{Type: "regular_expression", Source: "*"}},
+		_, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+			StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+				{
+					Pattern: &messages.StepDefinitionPattern{
+						Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
+						Source: "*",
+					},
+				},
 			},
 		})
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("returns err on parameter type issues", func() {
-		_, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-			ParameterTypeConfigs: []*dto.ParameterTypeConfig{
+		_, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+			ParameterTypeConfigs: []*messages.ParameterTypeConfig{
 				{Name: "parameterType1"},
 				{Name: "parameterType1"},
 			},
@@ -50,9 +55,9 @@ var _ = Describe("SupportCodeLibrary", func() {
 	Describe("GenerateExpressions", func() {
 		It("returns the generated expressions", func() {
 			var err error
-			library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+			library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(library.GenerateExpressions(`I have 100 cukes`)).To(Equal([]*dto.GeneratedExpression{
+			Expect(library.GenerateExpressions(`I have 100 cukes`)).To(Equal([]*messages.GeneratedExpression{
 				{
 					Text:               "I have {int} cukes",
 					ParameterTypeNames: []string{"int"},
@@ -65,7 +70,7 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with an empty config", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -77,9 +82,9 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with a hook", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-					AfterTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-						{ID: "afterHook1", TagExpression: "@tagA"},
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+					AfterTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
+						{Id: "afterHook1", TagExpression: "@tagA"},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -90,7 +95,7 @@ var _ = Describe("SupportCodeLibrary", func() {
 				Expect(matching).To(BeEmpty())
 				matching = library.GetMatchingAfterTestCaseHookDefinitions([]string{"@tagA"})
 				Expect(matching).To(HaveLen(1))
-				Expect(matching[0].ID).To(Equal("afterHook1"))
+				Expect(matching[0].Config.Id).To(Equal("afterHook1"))
 			})
 		})
 	})
@@ -99,7 +104,7 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with an empty config", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -111,9 +116,9 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with a hook", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-					BeforeTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-						{ID: "beforeHook1", TagExpression: "@tagB"},
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+					BeforeTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
+						{Id: "beforeHook1", TagExpression: "@tagB"},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -124,7 +129,7 @@ var _ = Describe("SupportCodeLibrary", func() {
 				Expect(matching).To(BeEmpty())
 				matching = library.GetMatchingBeforeTestCaseHookDefinitions([]string{"@tagB"})
 				Expect(matching).To(HaveLen(1))
-				Expect(matching[0].ID).To(Equal("beforeHook1"))
+				Expect(matching[0].Config.Id).To(Equal("beforeHook1"))
 			})
 		})
 	})
@@ -133,7 +138,7 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with an empty config", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -148,9 +153,15 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with a step", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-					StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-						{ID: "step1", Pattern: dto.Pattern{Type: "cucumber_expression", Source: "I have {int} cukes"}},
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+					StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+						{
+							Id: "step1",
+							Pattern: &messages.StepDefinitionPattern{
+								Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
+								Source: "I have {int} cukes",
+							},
+						},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -160,8 +171,8 @@ var _ = Describe("SupportCodeLibrary", func() {
 				stepDefinitions, patternMatch, err := library.GetMatchingStepDefinitions("I have 10 cukes")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stepDefinitions).To(HaveLen(1))
-				Expect(stepDefinitions[0].ID).To(Equal("step1"))
-				Expect(patternMatch).To(Equal([]*dto.PatternMatch{
+				Expect(stepDefinitions[0].Config.Id).To(Equal("step1"))
+				Expect(patternMatch).To(Equal([]*messages.PatternMatch{
 					{Captures: []string{"10"}, ParameterTypeName: "int"},
 				}))
 			})
@@ -170,10 +181,22 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with multiple steps that match", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-					StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-						{ID: "step1", Pattern: dto.Pattern{Type: "cucumber_expression", Source: "I have {int} cukes"}},
-						{ID: "step2", Pattern: dto.Pattern{Type: "regular_expression", Source: `^I have (\d+) cukes$`}},
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+					StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+						{
+							Id: "step1",
+							Pattern: &messages.StepDefinitionPattern{
+								Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
+								Source: "I have {int} cukes",
+							},
+						},
+						{
+							Id: "step2",
+							Pattern: &messages.StepDefinitionPattern{
+								Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
+								Source: `^I have (\d+) cukes$`,
+							},
+						},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -183,8 +206,8 @@ var _ = Describe("SupportCodeLibrary", func() {
 				stepDefinitions, patternMatch, err := library.GetMatchingStepDefinitions("I have 10 cukes")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stepDefinitions).To(HaveLen(2))
-				Expect(stepDefinitions[0].ID).To(Equal("step1"))
-				Expect(stepDefinitions[1].ID).To(Equal("step2"))
+				Expect(stepDefinitions[0].Config.Id).To(Equal("step1"))
+				Expect(stepDefinitions[1].Config.Id).To(Equal("step2"))
 				Expect(patternMatch).To(BeNil())
 			})
 		})
@@ -192,13 +215,19 @@ var _ = Describe("SupportCodeLibrary", func() {
 		Context("with an error while matching the step", func() {
 			BeforeEach(func() {
 				var err error
-				library, err = runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-					ParameterTypeConfigs: []*dto.ParameterTypeConfig{
-						{Name: "name1", Regexps: []string{`abc`}},
-						{Name: "name2", Regexps: []string{`abc`}},
+				library, err = runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+					ParameterTypeConfigs: []*messages.ParameterTypeConfig{
+						{Name: "name1", RegularExpressions: []string{`abc`}},
+						{Name: "name2", RegularExpressions: []string{`abc`}},
 					},
-					StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-						{ID: "step1", Pattern: dto.Pattern{Type: "regular_expression", Source: `^I have (abc)$`}},
+					StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+						{
+							Id: "step1",
+							Pattern: &messages.StepDefinitionPattern{
+								Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
+								Source: `^I have (abc)$`,
+							},
+						},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())

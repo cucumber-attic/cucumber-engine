@@ -2,13 +2,13 @@ package cli
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 
-	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/runner"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
+	"github.com/gogo/protobuf/proto"
 )
 
 var version string
@@ -27,7 +27,7 @@ func Execute() {
 	done := make(chan bool)
 	go func() {
 		for command := range outgoing {
-			data, err := json.Marshal(command)
+			data, err := proto.Marshal(command)
 			if err != nil {
 				panic(err)
 			}
@@ -40,12 +40,12 @@ func Execute() {
 	}()
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		command := &dto.Command{}
+		command := &messages.Wrapper{}
 		data := scanner.Bytes()
 		if *debugFlag {
 			fmt.Fprintf(os.Stderr, "CPR IN: %s\n", string(data))
 		}
-		if err := json.Unmarshal(data, command); err != nil {
+		if err := proto.Unmarshal(data, command); err != nil {
 			panic(err)
 		}
 		incoming <- command

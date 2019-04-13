@@ -1,63 +1,65 @@
 package runner_test
 
 import (
-	"github.com/cucumber/cucumber-engine/src/dto"
-	"github.com/cucumber/cucumber-engine/src/dto/event"
 	"github.com/cucumber/cucumber-engine/src/runner"
+	helpers "github.com/cucumber/cucumber-engine/test/helpers"
 	. "github.com/cucumber/cucumber-engine/test/matchers"
-	gherkin "github.com/cucumber/gherkin-go"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("TestCaseRunner", func() {
 	Context("with a passing step", func() {
-		var allCommandsSent []*dto.Command
-		var pickle *gherkin.Pickle
-		var result *dto.TestResult
+		var allMessagesSent []*messages.Wrapper
+		var pickle *messages.Pickle
+		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(command *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, command)
 			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				if command.Type == dto.CommandTypeRunTestStep {
-					return &dto.Command{
-						Type: dto.CommandTypeActionComplete,
-						Result: &dto.TestResult{
-							Status:   dto.StatusPassed,
-							Duration: 9,
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				switch x := incoming.Message.(type) {
+				case *messages.Wrapper_CommandRunTestStep:
+					return helpers.CreateActionCompleteMessageWithTestResult(
+						x.CommandRunTestStep.ActionId,
+						&messages.TestResult{
+							DurationNanoseconds: 9,
+							Status:              messages.Status_PASSED,
 						},
-					}
-				}
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
+					)
+				default:
+					return helpers.CreateActionCompleteMessage("")
 				}
 			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
 					{
-						ID: "step1",
-						Pattern: dto.Pattern{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
 							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
 						},
-						Line: 3,
-						URI:  "/path/to/steps",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
 					},
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			pickle = &gherkin.Pickle{
-				Locations: []gherkin.Location{{Line: 1}},
-				Steps: []*gherkin.PickleStep{
+			pickle = &messages.Pickle{
+				Locations: []*messages.Location{{Line: 1}},
+				Steps: []*messages.PickleStep{
 					{
-						Locations: []gherkin.Location{{Line: 2}},
+						Locations: []*messages.Location{{Line: 2}},
 						Text:      "I have 100 cukes",
 					},
 				},
+				Uri: "/path/to/feature",
 			}
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				ID:                          "testCase1",
@@ -65,40 +67,37 @@ var _ = Describe("TestCaseRunner", func() {
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			result = testCaseRunner.Run()
 		})
 
 		It("returns a passing result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Duration: 9,
-				Status:   dto.StatusPassed,
+			Expect(result).To(Equal(&messages.TestResult{
+				DurationNanoseconds: 9,
+				Status:              messages.Status_PASSED,
 			}))
 		})
 
 		It("sends 7 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(7))
+			Expect(allMessagesSent).To(HaveLen(7))
 		})
 
 		It("sends the test case prepared event command", func() {
-			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCasePrepared{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Steps: []*event.TestCasePreparedStep{
-						{
-							SourceLocation: &dto.Location{
-								URI:  "/path/to/feature",
-								Line: 2,
-							},
-							ActionLocation: &dto.Location{
-								URI:  "/path/to/steps",
-								Line: 3,
+			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCasePrepared{
+					TestCasePrepared: &messages.TestCasePrepared{
+						PickleId: "",
+						Steps: []*messages.TestCasePreparedStep{
+							{
+								SourceLocation: &messages.SourceReference{
+									Uri:      "/path/to/feature",
+									Location: &messages.Location{Line: 2},
+								},
+								ActionLocation: &messages.SourceReference{
+									Uri:      "/path/to/steps",
+									Location: &messages.Location{Line: 3},
+								},
 							},
 						},
 					},
@@ -107,300 +106,47 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case started event command", func() {
-			Expect(allCommandsSent[1]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseStarted{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
+			Expect(allMessagesSent[1]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCaseStarted{
+					TestCaseStarted: &messages.TestCaseStarted{
+						PickleId: "",
 					},
 				},
 			}))
 		})
 
 		It("sends the initialize test case command", func() {
-			Expect(allCommandsSent[2]).To(Equal(&dto.Command{
-				Type:       dto.CommandTypeInitializeTestCase,
-				TestCaseID: "testCase1",
-				TestCase: &dto.TestCase{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
+			Expect(allMessagesSent[2]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_CommandInitializeTestCase{
+					CommandInitializeTestCase: &messages.CommandInitializeTestCase{
+						TestCaseId: "testCase1",
+						Pickle:     pickle,
 					},
 				},
-				Pickle: pickle,
 			}))
 		})
 
 		It("sends the test step started event commands", func() {
-			Expect(allCommandsSent[3]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepStarted{
-					Index: 0,
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
-						},
+			Expect(allMessagesSent[3]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepStarted{
+					TestStepStarted: &messages.TestStepStarted{
+						PickleId: "",
+						Index:    0,
 					},
 				},
 			}))
 		})
 
 		It("sends the run test step command", func() {
-			Expect(allCommandsSent[4]).To(Equal(&dto.Command{
-				Type:             dto.CommandTypeRunTestStep,
-				TestCaseID:       "testCase1",
-				StepDefinitionID: "step1",
-				PatternMatches: []*dto.PatternMatch{
-					{
-						Captures:          []string{"100"},
-						ParameterTypeName: "int",
-					},
-				},
-			}))
-		})
-
-		It("sends the test step finished event command", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index:  0,
-					Result: &dto.TestResult{Duration: 9, Status: dto.StatusPassed},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
-						},
-					},
-				},
-			}))
-		})
-
-		It("sends the test case finished event command", func() {
-			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseFinished{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Result: &dto.TestResult{
-						Duration: 9,
-						Status:   dto.StatusPassed,
-					},
-				},
-			}))
-		})
-	})
-
-	Context("with a failing step", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
-
-		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
-			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				if command.Type == dto.CommandTypeRunTestStep {
-					return &dto.Command{
-						Type: dto.CommandTypeActionComplete,
-						Result: &dto.TestResult{
-							Status:   dto.StatusFailed,
-							Duration: 8,
-							Message:  "error message and stacktrace",
-						},
-					}
-				}
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
-				}
-			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-					{
-						ID: "step1",
-						Pattern: dto.Pattern{
-							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
-						},
-						Line: 3,
-						URI:  "/path/to/steps",
-					},
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
-						{
-							Locations: []gherkin.Location{{Line: 2}},
-							Text:      "I have 100 cukes",
-						},
-					},
-				},
-				SendCommand:                 sendCommand,
-				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
-				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
-			})
-			Expect(err).NotTo(HaveOccurred())
-			result = testCaseRunner.Run()
-		})
-
-		It("returns a failing result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status:   dto.StatusFailed,
-				Duration: 8,
-				Message:  "error message and stacktrace",
-			}))
-		})
-
-		It("sends 7 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(7))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithType(dto.CommandTypeRunTestStep))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
-		})
-
-		It("sends the test step finished event command with status failed", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 0,
-					Result: &dto.TestResult{
-						Status:   dto.StatusFailed,
-						Duration: 8,
-						Message:  "error message and stacktrace",
-					},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
-						},
-					},
-				},
-			}))
-		})
-
-		It("sends the test case finished event command with status failed", func() {
-			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseFinished{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Result: &dto.TestResult{
-						Status:   dto.StatusFailed,
-						Duration: 8,
-						Message:  "error message and stacktrace",
-					},
-				},
-			}))
-		})
-	})
-
-	Context("with a ambiguous step", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
-		expectedMessage := "Multiple step definitions match:\n" +
-			"  'I have {int} cukes'   - /path/to/steps:3  \n" +
-			`  '^I have (\d+) cukes$' - /path/to/steps:4  ` + "\n"
-
-		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
-			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
-				}
-			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
-					{
-						ID: "step1",
-						Pattern: dto.Pattern{
-							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
-						},
-						Line: 3,
-						URI:  "/path/to/steps",
-					},
-					{
-						ID: "step2",
-						Pattern: dto.Pattern{
-							Source: `^I have (\d+) cukes$`,
-							Type:   dto.PatternTypeRegularExpression,
-						},
-						Line: 4,
-						URI:  "/path/to/steps",
-					},
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
-						{
-							Locations: []gherkin.Location{{Line: 2}},
-							Text:      "I have 100 cukes",
-						},
-					},
-				},
-				SendCommand:                 sendCommand,
-				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
-				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
-			})
-			Expect(err).NotTo(HaveOccurred())
-			result = testCaseRunner.Run()
-		})
-
-		It("returns a ambiguous result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status:  dto.StatusAmbiguous,
-				Message: expectedMessage,
-			}))
-		})
-
-		It("sends 6 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(6))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
-		})
-
-		It("sends the test case prepared event command without an action location", func() {
-			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCasePrepared{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Steps: []*event.TestCasePreparedStep{
-						{
-							SourceLocation: &dto.Location{
-								URI:  "/path/to/feature",
-								Line: 2,
+			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_CommandRunTestStep{
+					CommandRunTestStep: &messages.CommandRunTestStep{
+						TestCaseId:       "testCase1",
+						StepDefinitionId: "step1",
+						PatternMatches: []*messages.PatternMatch{
+							{
+								Captures:          []string{"100"},
+								ParameterTypeName: "int",
 							},
 						},
 					},
@@ -409,18 +155,14 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command", func() {
-			Expect(allCommandsSent[4]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 0,
-					Result: &dto.TestResult{
-						Status:  dto.StatusAmbiguous,
-						Message: expectedMessage,
-					},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						PickleId: "",
+						Index:    0,
+						TestResult: &messages.TestResult{
+							DurationNanoseconds: 9,
+							Status:              messages.Status_PASSED,
 						},
 					},
 				},
@@ -428,16 +170,254 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseFinished{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
+			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCaseFinished{
+					TestCaseFinished: &messages.TestCaseFinished{
+						PickleId: "",
+						TestResult: &messages.TestResult{
+							DurationNanoseconds: 9,
+							Status:              messages.Status_PASSED,
+						},
 					},
-					Result: &dto.TestResult{
-						Status:  dto.StatusAmbiguous,
-						Message: expectedMessage,
+				},
+			}))
+		})
+	})
+
+	Context("with a failing step", func() {
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
+
+		BeforeEach(func() {
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
+			}
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				switch x := incoming.Message.(type) {
+				case *messages.Wrapper_CommandRunTestStep:
+					return helpers.CreateActionCompleteMessageWithTestResult(
+						x.CommandRunTestStep.ActionId,
+						&messages.TestResult{
+							Status:              messages.Status_FAILED,
+							DurationNanoseconds: 8,
+							Message:             "error message and stacktrace",
+						},
+					)
+				default:
+					return helpers.CreateActionCompleteMessage("")
+				}
+			}
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+					{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
+							Source: "I have {int} cukes",
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
+						},
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
+				ID: "testCase1",
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
+						{
+							Locations: []*messages.Location{{Line: 2}},
+							Text:      "I have 100 cukes",
+						},
+					},
+					Uri: "/path/to/feature",
+				},
+				SendCommand:                 sendCommand,
+				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
+				SupportCodeLibrary:          supportCodeLibrary,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			result = testCaseRunner.Run()
+		})
+
+		It("returns a failing result", func() {
+			Expect(result).To(Equal(&messages.TestResult{
+				Status:              messages.Status_FAILED,
+				DurationNanoseconds: 8,
+				Message:             "error message and stacktrace",
+			}))
+		})
+
+		It("sends 7 commands", func() {
+			Expect(allMessagesSent).To(HaveLen(7))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.CommandRunTestStep{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[6]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
+		})
+
+		It("sends the test step finished event command with status failed", func() {
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						PickleId: "",
+						Index:    0,
+						TestResult: &messages.TestResult{
+							Status:              messages.Status_FAILED,
+							DurationNanoseconds: 8,
+							Message:             "error message and stacktrace",
+						},
+					},
+				},
+			}))
+		})
+
+		It("sends the test case finished event command with status failed", func() {
+			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCaseFinished{
+					TestCaseFinished: &messages.TestCaseFinished{
+						PickleId: "",
+						TestResult: &messages.TestResult{
+							Status:              messages.Status_FAILED,
+							DurationNanoseconds: 8,
+							Message:             "error message and stacktrace",
+						},
+					},
+				},
+			}))
+		})
+	})
+
+	Context("with a ambiguous step", func() {
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
+		expectedMessage := "Multiple step definitions match:\n" +
+			"  'I have {int} cukes'   - /path/to/steps:3  \n" +
+			`  '^I have (\d+) cukes$' - /path/to/steps:4  ` + "\n"
+
+		BeforeEach(func() {
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
+			}
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				return helpers.CreateActionCompleteMessage("")
+			}
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+					{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
+							Source: "I have {int} cukes",
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
+						},
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
+					},
+					{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
+							Source: `^I have (\d+) cukes$`,
+							Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
+						},
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 4},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
+				ID: "testCase1",
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
+						{
+							Locations: []*messages.Location{{Line: 2}},
+							Text:      "I have 100 cukes",
+						},
+					},
+					Uri: "/path/to/feature",
+				},
+				SendCommand:                 sendCommand,
+				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
+				SupportCodeLibrary:          supportCodeLibrary,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			result = testCaseRunner.Run()
+		})
+
+		It("returns a ambiguous result", func() {
+			Expect(result).To(Equal(&messages.TestResult{
+				Status:  messages.Status_AMBIGUOUS,
+				Message: expectedMessage,
+			}))
+		})
+
+		It("sends 6 commands", func() {
+			Expect(allMessagesSent).To(HaveLen(6))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
+		})
+
+		It("sends the test case prepared event command without an action location", func() {
+			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCasePrepared{
+					TestCasePrepared: &messages.TestCasePrepared{
+						PickleId: "",
+						Steps: []*messages.TestCasePreparedStep{
+							{
+								SourceLocation: &messages.SourceReference{
+									Uri:      "/path/to/feature",
+									Location: &messages.Location{Line: 2},
+								},
+							},
+						},
+					},
+				},
+			}))
+		})
+
+		It("sends the test step finished event command", func() {
+			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						PickleId: "",
+						Index:    0,
+						TestResult: &messages.TestResult{
+							Status:  messages.Status_AMBIGUOUS,
+							Message: expectedMessage,
+						},
+					},
+				},
+			}))
+		})
+
+		It("sends the test case finished event command", func() {
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCaseFinished{
+					TestCaseFinished: &messages.TestCaseFinished{
+						PickleId: "",
+						TestResult: &messages.TestResult{
+							Status:  messages.Status_AMBIGUOUS,
+							Message: expectedMessage,
+						},
 					},
 				},
 			}))
@@ -445,39 +425,41 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a ambiguous step and base directory", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
-				}
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				return helpers.CreateActionCompleteMessage("")
 			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
 					{
-						ID: "step1",
-						Pattern: dto.Pattern{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
 							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
 						},
-						Line: 3,
-						URI:  "/path/to/base/path/to/steps",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/base/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
 					},
 					{
-						ID: "step2",
-						Pattern: dto.Pattern{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
 							Source: `^I have (\d+) cukes$`,
-							Type:   dto.PatternTypeRegularExpression,
+							Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
 						},
-						Line: 4,
-						URI:  "/path/to/base/path/to/steps",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/base/path/to/steps",
+							Location: &messages.Location{Line: 4},
+						},
 					},
 				},
 			})
@@ -485,27 +467,27 @@ var _ = Describe("TestCaseRunner", func() {
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				BaseDirectory: "/path/to/base",
 				ID:            "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
 						{
-							Locations: []gherkin.Location{{Line: 2}},
+							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
 						},
 					},
+					Uri: "/path/to/base/path/to/feature",
 				},
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/base/path/to/feature",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			result = testCaseRunner.Run()
 		})
 
 		It("returns a ambiguous result with the paths ", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status: dto.StatusAmbiguous,
+			Expect(result).To(Equal(&messages.TestResult{
+				Status: messages.Status_AMBIGUOUS,
 				Message: "Multiple step definitions match:\n" +
 					"  'I have {int} cukes'   - path/to/steps:3  \n" +
 					`  '^I have (\d+) cukes$' - path/to/steps:4  ` + "\n",
@@ -513,91 +495,89 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends 6 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(6))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+			Expect(allMessagesSent).To(HaveLen(6))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
 		})
 	})
 
 	Context("with a undefined step", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
 		var snippet = "snippet line1\nsnippet line2\nsnippet line3"
 
 		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				if command.Type == dto.CommandTypeGenerateSnippet {
-					return &dto.Command{
-						Type:    dto.CommandTypeActionComplete,
-						Snippet: snippet,
-					}
-				}
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				switch x := incoming.Message.(type) {
+				case *messages.Wrapper_CommandGenerateSnippet:
+					return helpers.CreateActionCompleteMessageWithSnippet(
+						x.CommandGenerateSnippet.ActionId,
+						snippet,
+					)
+				default:
+					return helpers.CreateActionCompleteMessage("")
 				}
 			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{})
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				ID: "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
 						{
-							Locations: []gherkin.Location{{Line: 2}},
+							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
 						},
 					},
+					Uri: "/path/to/feature",
 				},
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			result = testCaseRunner.Run()
 		})
 
 		It("returns a undefined result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status:  dto.StatusUndefined,
+			Expect(result).To(Equal(&messages.TestResult{
+				Status:  messages.Status_UNDEFINED,
 				Message: snippet,
 			}))
 		})
 
 		It("sends 7 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(7))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+			Expect(allMessagesSent).To(HaveLen(7))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.CommandGenerateSnippet{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[6]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
 		})
 
 		It("sends the test case prepared event command without an action location", func() {
-			Expect(allCommandsSent[0]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCasePrepared{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Steps: []*event.TestCasePreparedStep{
-						{
-							SourceLocation: &dto.Location{
-								URI:  "/path/to/feature",
-								Line: 2,
+			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCasePrepared{
+					TestCasePrepared: &messages.TestCasePrepared{
+						PickleId: "",
+						Steps: []*messages.TestCasePreparedStep{
+							{
+								SourceLocation: &messages.SourceReference{
+									Uri:      "/path/to/feature",
+									Location: &messages.Location{Line: 2},
+								},
 							},
 						},
 					},
@@ -606,30 +586,28 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the generate snippet command", func() {
-			Expect(allCommandsSent[4]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeGenerateSnippet,
-				GeneratedExpressions: []*dto.GeneratedExpression{
-					{
-						Text:               "I have {int} cukes",
-						ParameterTypeNames: []string{"int"},
+			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_CommandGenerateSnippet{
+					CommandGenerateSnippet: &messages.CommandGenerateSnippet{
+						GeneratedExpressions: []*messages.GeneratedExpression{
+							{
+								Text:               "I have {int} cukes",
+								ParameterTypeNames: []string{"int"},
+							},
+						},
 					},
 				},
 			}))
 		})
 
 		It("sends the test step finished event command with status undefined", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index: 0,
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: snippet,
-					},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						Index: 0,
+						TestResult: &messages.TestResult{
+							Status:  messages.Status_UNDEFINED,
+							Message: snippet,
 						},
 					},
 				},
@@ -637,16 +615,13 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command with status undefined", func() {
-			Expect(allCommandsSent[6]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestCaseFinished{
-					SourceLocation: &dto.Location{
-						URI:  "/path/to/feature",
-						Line: 1,
-					},
-					Result: &dto.TestResult{
-						Status:  dto.StatusUndefined,
-						Message: snippet,
+			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestCaseFinished{
+					TestCaseFinished: &messages.TestCaseFinished{
+						TestResult: &messages.TestResult{
+							Status:  messages.Status_UNDEFINED,
+							Message: snippet,
+						},
 					},
 				},
 			}))
@@ -654,99 +629,98 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a failing and then skipped step", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				if command.Type == dto.CommandTypeRunTestStep {
-					return &dto.Command{
-						Type: dto.CommandTypeActionComplete,
-						Result: &dto.TestResult{
-							Status:   dto.StatusFailed,
-							Duration: 8,
-							Message:  "error message and stacktrace",
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				switch x := incoming.Message.(type) {
+				case *messages.Wrapper_CommandRunTestStep:
+					return helpers.CreateActionCompleteMessageWithTestResult(
+						x.CommandRunTestStep.ActionId,
+						&messages.TestResult{
+							Status:              messages.Status_FAILED,
+							DurationNanoseconds: 8,
+							Message:             "error message and stacktrace",
 						},
-					}
-				}
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
+					)
+				default:
+					return helpers.CreateActionCompleteMessage("")
 				}
 			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
 					{
-						ID: "step1",
-						Pattern: dto.Pattern{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
 							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
 						},
-						Line: 3,
-						URI:  "/path/to/steps",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
 					},
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				ID: "testCase1",
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
 						{
-							Locations: []gherkin.Location{{Line: 2}},
+							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
 						},
 						{
-							Locations: []gherkin.Location{{Line: 3}},
+							Locations: []*messages.Location{{Line: 3}},
 							Text:      "I have 101 cukes",
 						},
 					},
+					Uri: "/path/to/feature",
 				},
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			result = testCaseRunner.Run()
 		})
 
 		It("returns a failing result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status:   dto.StatusFailed,
-				Duration: 8,
-				Message:  "error message and stacktrace",
+			Expect(result).To(Equal(&messages.TestResult{
+				Status:              messages.Status_FAILED,
+				DurationNanoseconds: 8,
+				Message:             "error message and stacktrace",
 			}))
 		})
 
 		It("sends 9 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(9))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithType(dto.CommandTypeRunTestStep))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[7]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[8]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+			Expect(allMessagesSent).To(HaveLen(9))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.CommandRunTestStep{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[6]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[7]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[8]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
 		})
 
 		It("sends the test step finished event command with status skipped for the second step", func() {
-			Expect(allCommandsSent[7]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index:  1,
-					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[7]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						Index: 1,
+						TestResult: &messages.TestResult{
+							Status: messages.Status_SKIPPED,
 						},
 					},
 				},
@@ -755,36 +729,48 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("isSkipped is true (fail fast or dry run)", func() {
-		var allCommandsSent []*dto.Command
-		var result *dto.TestResult
+		var allMessagesSent []*messages.Wrapper
+		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allCommandsSent = []*dto.Command{}
-			sendCommand := func(command *dto.Command) {
-				allCommandsSent = append(allCommandsSent, command)
+			allMessagesSent = []*messages.Wrapper{}
+			sendCommand := func(incoming *messages.Wrapper) {
+				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(command *dto.Command) *dto.Command {
-				allCommandsSent = append(allCommandsSent, command)
-				return &dto.Command{
-					Type: dto.CommandTypeActionComplete,
-				}
+			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+				sendCommand(incoming)
+				return helpers.CreateActionCompleteMessage("")
 			}
-			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&dto.SupportCodeConfig{
-				BeforeTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-					{ID: "beforeHook1", URI: "/path/to/hooks", Line: 11},
-				},
-				AfterTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-					{ID: "afterHook1", URI: "/path/to/hooks", Line: 12},
-				},
-				StepDefinitionConfigs: []*dto.StepDefinitionConfig{
+			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{
+				BeforeTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
 					{
-						ID: "step1",
-						Pattern: dto.Pattern{
-							Source: "I have {int} cukes",
-							Type:   dto.PatternTypeCucumberExpression,
+						Id: "beforeHook1",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/hooks",
+							Location: &messages.Location{Line: 11},
 						},
-						Line: 3,
-						URI:  "/path/to/steps",
+					},
+				},
+				AfterTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
+					{
+						Id: "afterHook1",
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/hooks",
+							Location: &messages.Location{Line: 12},
+						},
+					},
+				},
+				StepDefinitionConfigs: []*messages.StepDefinitionConfig{
+					{
+						Id: "step1",
+						Pattern: &messages.StepDefinitionPattern{
+							Source: "I have {int} cukes",
+							Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
+						},
+						Location: &messages.SourceReference{
+							Uri:      "/path/to/steps",
+							Location: &messages.Location{Line: 3},
+						},
 					},
 				},
 			})
@@ -792,53 +778,50 @@ var _ = Describe("TestCaseRunner", func() {
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				ID:        "testCase1",
 				IsSkipped: true,
-				Pickle: &gherkin.Pickle{
-					Locations: []gherkin.Location{{Line: 1}},
-					Steps: []*gherkin.PickleStep{
+				Pickle: &messages.Pickle{
+					Locations: []*messages.Location{{Line: 1}},
+					Steps: []*messages.PickleStep{
 						{
-							Locations: []gherkin.Location{{Line: 2}},
+							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
 						},
 					},
+					Uri: "/path/to/feature",
 				},
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
 				SupportCodeLibrary:          supportCodeLibrary,
-				URI:                         "/path/to/feature",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			result = testCaseRunner.Run()
 		})
 
 		It("returns a skipped result", func() {
-			Expect(result).To(Equal(&dto.TestResult{
-				Status: dto.StatusSkipped,
+			Expect(result).To(Equal(&messages.TestResult{
+				Status: messages.Status_SKIPPED,
 			}))
 		})
 
 		It("sends 9 commands", func() {
-			Expect(allCommandsSent).To(HaveLen(9))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[5]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-			Expect(allCommandsSent[7]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-			Expect(allCommandsSent[8]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
+			Expect(allMessagesSent).To(HaveLen(9))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[6]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+			Expect(allMessagesSent[7]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+			Expect(allMessagesSent[8]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
 		})
 
 		It("sends the test step finished event command with status skipped for the before hook", func() {
-			Expect(allCommandsSent[3]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index:  0,
-					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[3]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						Index: 0,
+						TestResult: &messages.TestResult{
+							Status: messages.Status_SKIPPED,
 						},
 					},
 				},
@@ -846,15 +829,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the step", func() {
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index:  1,
-					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						Index: 1,
+						TestResult: &messages.TestResult{
+							Status: messages.Status_SKIPPED,
 						},
 					},
 				},
@@ -862,15 +842,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the after hook", func() {
-			Expect(allCommandsSent[7]).To(Equal(&dto.Command{
-				Type: dto.CommandTypeEvent,
-				Event: &event.TestStepFinished{
-					Index:  2,
-					Result: &dto.TestResult{Status: dto.StatusSkipped},
-					TestCase: &dto.TestCase{
-						SourceLocation: &dto.Location{
-							URI:  "/path/to/feature",
-							Line: 1,
+			Expect(allMessagesSent[7]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestStepFinished{
+					TestStepFinished: &messages.TestStepFinished{
+						Index: 2,
+						TestResult: &messages.TestResult{
+							Status: messages.Status_SKIPPED,
 						},
 					},
 				},

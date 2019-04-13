@@ -1,28 +1,13 @@
 package dto
 
-import cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
+import (
+	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
+)
 
-// StepDefinitionConfig is the implementation of a step
-type StepDefinitionConfig struct {
-	ID      string  `json:"id"`
-	Pattern Pattern `json:"pattern"`
-	URI     string  `json:"uri"`
-	Line    int     `json:"line"`
-}
-
-// StepDefinition is a StepDefinitionConfig where the patten has been
+// StepDefinition wraps a StepDefinitionConfig where the patten has been
 // converted to a cucumber expression
 type StepDefinition struct {
-	ID         string
+	Config     *messages.StepDefinitionConfig
 	Expression cucumberexpressions.Expression
-	URI        string
-	Line       int
-}
-
-// Location returns a Location for the step defio
-func (s *StepDefinition) Location() *Location {
-	return &Location{
-		URI:  s.URI,
-		Line: s.Line,
-	}
 }

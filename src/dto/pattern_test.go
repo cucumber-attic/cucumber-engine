@@ -1,8 +1,9 @@
 package dto_test
 
 import (
-	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
 	"github.com/cucumber/cucumber-engine/src/dto"
+	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -11,12 +12,12 @@ var _ = Describe("Pattern", func() {
 	Describe("Expression", func() {
 		Context("type is cucumber expression", func() {
 			It("returns a cucumber expression", func() {
-				pattern := dto.Pattern{
-					Type:   dto.PatternTypeCucumberExpression,
+				pattern := &messages.StepDefinitionPattern{
+					Type:   messages.StepDefinitionPatternType_CUCUMBER_EXPRESSION,
 					Source: "I have {int} cukes",
 				}
 				parameterTypeRegistry := cucumberexpressions.NewParameterTypeRegistry()
-				expr, err := pattern.Expression(parameterTypeRegistry)
+				expr, err := dto.GetExpression(pattern, parameterTypeRegistry)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(expr).To(BeAssignableToTypeOf(&cucumberexpressions.CucumberExpression{}))
 			})
@@ -24,12 +25,12 @@ var _ = Describe("Pattern", func() {
 
 		Context("type is regular expression", func() {
 			It("returns a regular expression", func() {
-				pattern := dto.Pattern{
-					Type:   dto.PatternTypeRegularExpression,
+				pattern := &messages.StepDefinitionPattern{
+					Type:   messages.StepDefinitionPatternType_REGULAR_EXPRESSION,
 					Source: `^I have (\d+) cukes$`,
 				}
 				parameterTypeRegistry := cucumberexpressions.NewParameterTypeRegistry()
-				expr, err := pattern.Expression(parameterTypeRegistry)
+				expr, err := dto.GetExpression(pattern, parameterTypeRegistry)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(expr).To(BeAssignableToTypeOf(&cucumberexpressions.RegularExpression{}))
 			})
@@ -37,14 +38,14 @@ var _ = Describe("Pattern", func() {
 
 		Context("type is invalid", func() {
 			It("returns an error", func() {
-				pattern := dto.Pattern{
-					Type:   dto.PatternType("invalid"),
+				pattern := &messages.StepDefinitionPattern{
+					Type:   3,
 					Source: "I have {int} cukes",
 				}
 				parameterTypeRegistry := cucumberexpressions.NewParameterTypeRegistry()
-				_, err := pattern.Expression(parameterTypeRegistry)
+				_, err := dto.GetExpression(pattern, parameterTypeRegistry)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Unexpected pattern type: `invalid`. Should be `cucumber_expression` or `regular_expression`"))
+				Expect(err.Error()).To(Equal("Unexpected pattern type: `3`. Should be `CUCUMBER_EXPRESSION` or `REGULAR_EXPRESSION`"))
 			})
 		})
 	})

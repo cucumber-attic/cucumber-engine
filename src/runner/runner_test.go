@@ -3,13 +3,11 @@ package runner_test
 import (
 	"path"
 	"runtime"
-	"time"
 
-	"github.com/cucumber/cucumber-engine/src/dto"
-	"github.com/cucumber/cucumber-engine/src/dto/event"
 	"github.com/cucumber/cucumber-engine/src/runner"
+	helpers "github.com/cucumber/cucumber-engine/test/helpers"
 	. "github.com/cucumber/cucumber-engine/test/matchers"
-	gherkin "github.com/cucumber/gherkin-go"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,61 +20,63 @@ var _ = Describe("Runner", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
 
 		Context("all steps are undefined", func() {
-			var allCommandsSent []*dto.Command
+			var allMessagesSent []*messages.Wrapper
 
 			BeforeEach(func() {
-				allCommandsSent = runWithConfigAndResponder(
-					&dto.FeaturesConfig{
+				allMessagesSent = runWithConfigAndResponder(
+					&messages.SourcesConfig{
 						AbsolutePaths: []string{featurePath},
-						Filters:       &dto.FeaturesFilterConfig{},
+						Filters:       &messages.SourcesFilterConfig{},
 						Language:      "en",
-						Order:         &dto.FeaturesOrder{},
+						Order:         &messages.SourcesOrder{},
 					},
-					&dto.RuntimeConfig{},
-					&dto.SupportCodeConfig{},
-					func(commandChan chan *dto.Command, command *dto.Command) {
-						switch command.Type {
-						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-							}
-						case dto.CommandTypeGenerateSnippet:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-								Snippet:    "snippet",
-							}
+					&messages.RuntimeConfig{
+						MaxParallel: 1,
+					},
+					&messages.SupportCodeConfig{},
+					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+						switch x := incoming.Message.(type) {
+						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandInitializeTestCase:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
+						case *messages.Wrapper_CommandGenerateSnippet:
+							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
 				)
 			})
 
 			It("sends 21 commands", func() {
-				Expect(allCommandsSent).To(HaveLen(21))
-				Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
-				Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
-				Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.PickleEvent{}))
-				Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.PickleAccepted{}))
-				Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestRunStarted{}))
-				Expect(allCommandsSent[5]).To(BeACommandWithType(dto.CommandTypeRunBeforeTestRunHooks))
-				Expect(allCommandsSent[6]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCasePrepared{}))
-				Expect(allCommandsSent[7]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseStarted{}))
-				Expect(allCommandsSent[8]).To(BeACommandWithType(dto.CommandTypeInitializeTestCase))
-				Expect(allCommandsSent[9]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-				Expect(allCommandsSent[10]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-				Expect(allCommandsSent[11]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-				Expect(allCommandsSent[12]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-				Expect(allCommandsSent[13]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-				Expect(allCommandsSent[14]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-				Expect(allCommandsSent[15]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepStarted{}))
-				Expect(allCommandsSent[16]).To(BeACommandWithType(dto.CommandTypeGenerateSnippet))
-				Expect(allCommandsSent[17]).To(BeACommandWithEventAssignableToTypeOf(&event.TestStepFinished{}))
-				Expect(allCommandsSent[18]).To(BeACommandWithEventAssignableToTypeOf(&event.TestCaseFinished{}))
-				Expect(allCommandsSent[19]).To(BeACommandWithType(dto.CommandTypeRunAfterTestRunHooks))
-				Expect(allCommandsSent[20]).To(Equal(&dto.Command{
-					Type:  dto.CommandTypeEvent,
-					Event: &event.TestRunFinished{Result: &dto.TestRunResult{Success: false}},
+				Expect(allMessagesSent).To(HaveLen(21))
+				Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.Source{}))
+				Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.GherkinDocument{}))
+				Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.Pickle{}))
+				Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.PickleAccepted{}))
+				Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestRunStarted{}))
+				Expect(allMessagesSent[5]).To(BeAMessageOfType(&messages.CommandRunBeforeTestRunHooks{}))
+				Expect(allMessagesSent[6]).To(BeAMessageOfType(&messages.TestCasePrepared{}))
+				Expect(allMessagesSent[7]).To(BeAMessageOfType(&messages.TestCaseStarted{}))
+				Expect(allMessagesSent[8]).To(BeAMessageOfType(&messages.CommandInitializeTestCase{}))
+				Expect(allMessagesSent[9]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+				Expect(allMessagesSent[10]).To(BeAMessageOfType(&messages.CommandGenerateSnippet{}))
+				Expect(allMessagesSent[11]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+				Expect(allMessagesSent[12]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+				Expect(allMessagesSent[13]).To(BeAMessageOfType(&messages.CommandGenerateSnippet{}))
+				Expect(allMessagesSent[14]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+				Expect(allMessagesSent[15]).To(BeAMessageOfType(&messages.TestStepStarted{}))
+				Expect(allMessagesSent[16]).To(BeAMessageOfType(&messages.CommandGenerateSnippet{}))
+				Expect(allMessagesSent[17]).To(BeAMessageOfType(&messages.TestStepFinished{}))
+				Expect(allMessagesSent[18]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
+				Expect(allMessagesSent[19]).To(BeAMessageOfType(&messages.CommandRunAfterTestRunHooks{}))
+				Expect(allMessagesSent[20]).To(Equal(&messages.Wrapper{
+					Message: &messages.Wrapper_TestRunFinished{
+						TestRunFinished: &messages.TestRunFinished{
+							Success: false,
+						},
+					},
 				}))
 			})
 		})
@@ -84,119 +84,175 @@ var _ = Describe("Runner", func() {
 
 	Context("all pickles gets rejected", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
-		var allCommandsSent []*dto.Command
+		var allMessagesSent []*messages.Wrapper
 
 		BeforeEach(func() {
-			allCommandsSent = runWithConfigAndResponder(
-				&dto.FeaturesConfig{
+			allMessagesSent = runWithConfigAndResponder(
+				&messages.SourcesConfig{
 					AbsolutePaths: []string{featurePath},
-					Filters: &dto.FeaturesFilterConfig{
+					Filters: &messages.SourcesFilterConfig{
 						TagExpression: "@tagA",
 					},
 					Language: "en",
-					Order:    &dto.FeaturesOrder{},
+					Order:    &messages.SourcesOrder{},
 				},
-				&dto.RuntimeConfig{},
-				&dto.SupportCodeConfig{},
-				func(commandChan chan *dto.Command, command *dto.Command) {},
+				&messages.RuntimeConfig{},
+				&messages.SupportCodeConfig{},
+				func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {},
 			)
 		})
 
 		It("does not run test run hooks", func() {
-			Expect(allCommandsSent).To(HaveLen(6))
-			Expect(allCommandsSent[0]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.SourceEvent{}))
-			Expect(allCommandsSent[1]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.GherkinDocumentEvent{}))
-			Expect(allCommandsSent[2]).To(BeACommandWithEventAssignableToTypeOf(&gherkin.PickleEvent{}))
-			Expect(allCommandsSent[3]).To(BeACommandWithEventAssignableToTypeOf(&event.PickleRejected{}))
-			Expect(allCommandsSent[4]).To(BeACommandWithEventAssignableToTypeOf(&event.TestRunStarted{}))
-			Expect(allCommandsSent[5]).To(Equal(&dto.Command{
-				Type:  dto.CommandTypeEvent,
-				Event: &event.TestRunFinished{Result: &dto.TestRunResult{Success: true}},
+			Expect(allMessagesSent).To(HaveLen(6))
+			Expect(allMessagesSent[0]).To(BeAMessageOfType(&messages.Source{}))
+			Expect(allMessagesSent[1]).To(BeAMessageOfType(&messages.GherkinDocument{}))
+			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.Pickle{}))
+			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.PickleRejected{}))
+			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestRunStarted{}))
+			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
+				Message: &messages.Wrapper_TestRunFinished{
+					TestRunFinished: &messages.TestRunFinished{
+						Success: true,
+					},
+				},
 			}))
 		})
 	})
 
 	Context("with test case hooks", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "tags.feature")
-		var allCommandsSent []*dto.Command
+		var allMessagesSent []*messages.Wrapper
 
 		BeforeEach(func() {
-			allCommandsSent = runWithConfigAndResponder(
-				&dto.FeaturesConfig{
+			allMessagesSent = runWithConfigAndResponder(
+				&messages.SourcesConfig{
 					AbsolutePaths: []string{featurePath},
-					Filters:       &dto.FeaturesFilterConfig{},
+					Filters:       &messages.SourcesFilterConfig{},
 					Language:      "en",
-					Order:         &dto.FeaturesOrder{},
+					Order:         &messages.SourcesOrder{},
 				},
-				&dto.RuntimeConfig{},
-				&dto.SupportCodeConfig{
-					BeforeTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-						{ID: "1", URI: "hooks.js", Line: 11},
-						{ID: "2", TagExpression: "@tagA", URI: "hooks.js", Line: 12},
-					},
-					AfterTestCaseHookDefinitionConfigs: []*dto.TestCaseHookDefinitionConfig{
-						{ID: "3", TagExpression: "@tagA", URI: "hooks.js", Line: 13},
-						{ID: "4", URI: "hooks.js", Line: 14},
-					},
+				&messages.RuntimeConfig{
+					MaxParallel: 1,
 				},
-				func(commandChan chan *dto.Command, command *dto.Command) {
-					switch command.Type {
-					case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks, dto.CommandTypeInitializeTestCase:
-						commandChan <- &dto.Command{
-							Type:       dto.CommandTypeActionComplete,
-							ResponseTo: command.ID,
-						}
-					case dto.CommandTypeRunBeforeTestCaseHook, dto.CommandTypeRunAfterTestCaseHook:
-						commandChan <- &dto.Command{
-							Type:       dto.CommandTypeActionComplete,
-							ResponseTo: command.ID,
-							Result: &dto.TestResult{
-								Status: dto.StatusPassed,
+				&messages.SupportCodeConfig{
+					BeforeTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
+						{
+							Id: "1",
+							Location: &messages.SourceReference{
+								Uri:      "hooks.js",
+								Location: &messages.Location{Line: 11},
 							},
-						}
-					case dto.CommandTypeGenerateSnippet:
-						commandChan <- &dto.Command{
-							Type:       dto.CommandTypeActionComplete,
-							ResponseTo: command.ID,
-							Snippet:    "snippet",
-						}
+						},
+						{
+							Id:            "2",
+							TagExpression: "@tagA",
+							Location: &messages.SourceReference{
+								Uri:      "hooks.js",
+								Location: &messages.Location{Line: 12},
+							},
+						},
+					},
+					AfterTestCaseHookDefinitionConfigs: []*messages.TestCaseHookDefinitionConfig{
+						{
+							Id:            "3",
+							TagExpression: "@tagA",
+							Location: &messages.SourceReference{
+								Uri:      "hooks.js",
+								Location: &messages.Location{Line: 13},
+							},
+						},
+						{
+							Id: "1",
+							Location: &messages.SourceReference{
+								Uri:      "hooks.js",
+								Location: &messages.Location{Line: 14},
+							},
+						},
+					},
+				},
+				func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+					switch x := incoming.Message.(type) {
+					case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+						commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
+					case *messages.Wrapper_CommandRunAfterTestRunHooks:
+						commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
+					case *messages.Wrapper_CommandInitializeTestCase:
+						commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
+					case *messages.Wrapper_CommandRunBeforeTestCaseHook:
+						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunBeforeTestCaseHook.ActionId, &messages.TestResult{Status: messages.Status_PASSED})
+					case *messages.Wrapper_CommandRunAfterTestCaseHook:
+						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunAfterTestCaseHook.ActionId, &messages.TestResult{Status: messages.Status_PASSED})
+					case *messages.Wrapper_CommandGenerateSnippet:
+						commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 					}
 				},
 			)
 		})
 
 		It("runs test case hooks only for pickles that match the tag expression", func() {
-			testCasePreparedEvents := []*event.TestCasePrepared{}
-			for _, command := range allCommandsSent {
-				if command.Type == dto.CommandTypeEvent {
-					if testCasePreparedEvent, ok := command.Event.(*event.TestCasePrepared); ok {
-						testCasePreparedEvents = append(testCasePreparedEvents, testCasePreparedEvent)
-					}
+			testCasePreparedMessages := []*messages.TestCasePrepared{}
+			for _, msg := range allMessagesSent {
+				if wrapper, ok := msg.Message.(*messages.Wrapper_TestCasePrepared); ok {
+					testCasePreparedMessages = append(testCasePreparedMessages, wrapper.TestCasePrepared)
 				}
 			}
-			Expect(testCasePreparedEvents).To(HaveLen(2))
-			Expect(testCasePreparedEvents[0]).To(Equal(&event.TestCasePrepared{
-				SourceLocation: &dto.Location{
-					Line: 2,
-					URI:  featurePath,
-				},
-				Steps: []*event.TestCasePreparedStep{
-					{ActionLocation: &dto.Location{Line: 11, URI: "hooks.js"}},
-					{SourceLocation: &dto.Location{Line: 3, URI: featurePath}},
-					{ActionLocation: &dto.Location{Line: 14, URI: "hooks.js"}},
+			Expect(testCasePreparedMessages).To(HaveLen(2))
+			Expect(testCasePreparedMessages[0]).To(Equal(&messages.TestCasePrepared{
+				PickleId: "A1",
+				Steps: []*messages.TestCasePreparedStep{
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 11},
+						},
+					},
+					{
+						SourceLocation: &messages.SourceReference{
+							Uri:      featurePath,
+							Location: &messages.Location{Line: 3, Column: 10},
+						},
+					},
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 14},
+						},
+					},
 				},
 			}))
-			Expect(testCasePreparedEvents[1]).To(Equal(&event.TestCasePrepared{
-				SourceLocation: &dto.Location{
-					Line: 6,
-					URI:  featurePath,
-				},
-				Steps: []*event.TestCasePreparedStep{
-					{ActionLocation: &dto.Location{Line: 11, URI: "hooks.js"}},
-					{ActionLocation: &dto.Location{Line: 12, URI: "hooks.js"}},
-					{SourceLocation: &dto.Location{Line: 7, URI: featurePath}},
-					{ActionLocation: &dto.Location{Line: 13, URI: "hooks.js"}},
-					{ActionLocation: &dto.Location{Line: 14, URI: "hooks.js"}},
+			Expect(testCasePreparedMessages[1]).To(Equal(&messages.TestCasePrepared{
+				PickleId: "A2",
+				Steps: []*messages.TestCasePreparedStep{
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 11},
+						},
+					},
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 12},
+						},
+					},
+					{
+						SourceLocation: &messages.SourceReference{
+							Uri:      featurePath,
+							Location: &messages.Location{Line: 7, Column: 10},
+						},
+					},
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 13},
+						},
+					},
+					{
+						ActionLocation: &messages.SourceReference{
+							Uri:      "hooks.js",
+							Location: &messages.Location{Line: 14},
+						},
+					},
 				},
 			}))
 		})
@@ -204,142 +260,116 @@ var _ = Describe("Runner", func() {
 
 	Context("running in parallel with three pickles", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "many.feature")
-		var allCommandsSent []*dto.Command
+		var allMessagesSent []*messages.Wrapper
 
 		Context("maxParallel is 2", func() {
 			BeforeEach(func() {
-				allCommandsSent = runWithConfigAndResponder(
-					&dto.FeaturesConfig{
+				allMessagesSent = runWithConfigAndResponder(
+					&messages.SourcesConfig{
 						AbsolutePaths: []string{featurePath},
-						Filters:       &dto.FeaturesFilterConfig{},
+						Filters:       &messages.SourcesFilterConfig{},
 						Language:      "en",
-						Order:         &dto.FeaturesOrder{},
+						Order:         &messages.SourcesOrder{},
 					},
-					&dto.RuntimeConfig{
+					&messages.RuntimeConfig{
 						MaxParallel: 2,
 					},
-					&dto.SupportCodeConfig{},
-					func(commandChan chan *dto.Command, command *dto.Command) {
-						switch command.Type {
-						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-							}
-						case dto.CommandTypeInitializeTestCase:
-							time.Sleep(time.Millisecond * 100)
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-							}
-						case dto.CommandTypeGenerateSnippet:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-								Snippet:    "snippet",
-							}
+					&messages.SupportCodeConfig{},
+					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+						switch x := incoming.Message.(type) {
+						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandInitializeTestCase:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
+						case *messages.Wrapper_CommandGenerateSnippet:
+							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
 				)
 			})
 
 			It("runs exactly two test cases at once", func() {
-				maxRunning := 0
-				currentRunning := 0
-				for _, command := range allCommandsSent {
-					if command.Type == dto.CommandTypeInitializeTestCase {
-						currentRunning++
-						if currentRunning > maxRunning {
-							maxRunning = currentRunning
-						}
-					}
-					if command.Type == dto.CommandTypeEvent {
-						if _, ok := command.Event.(*event.TestCaseFinished); ok {
-							currentRunning--
-						}
-					}
-				}
+				maxRunning := determineMaxRunning(allMessagesSent)
 				Expect(maxRunning).To(Equal(2))
 			})
 		})
 
-		Context("maxParallel is -1", func() {
+		Context("maxParallel is 0", func() {
 			BeforeEach(func() {
-				allCommandsSent = runWithConfigAndResponder(
-					&dto.FeaturesConfig{
+				allMessagesSent = runWithConfigAndResponder(
+					&messages.SourcesConfig{
 						AbsolutePaths: []string{featurePath},
-						Filters:       &dto.FeaturesFilterConfig{},
+						Filters:       &messages.SourcesFilterConfig{},
 						Language:      "en",
-						Order:         &dto.FeaturesOrder{},
+						Order:         &messages.SourcesOrder{},
 					},
-					&dto.RuntimeConfig{
-						MaxParallel: -1,
+					&messages.RuntimeConfig{
+						MaxParallel: 0,
 					},
-					&dto.SupportCodeConfig{},
-					func(commandChan chan *dto.Command, command *dto.Command) {
-						switch command.Type {
-						case dto.CommandTypeRunBeforeTestRunHooks, dto.CommandTypeRunAfterTestRunHooks:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-							}
-						case dto.CommandTypeInitializeTestCase:
-							time.Sleep(time.Millisecond * 100)
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-							}
-						case dto.CommandTypeGenerateSnippet:
-							commandChan <- &dto.Command{
-								Type:       dto.CommandTypeActionComplete,
-								ResponseTo: command.ID,
-								Snippet:    "snippet",
-							}
+					&messages.SupportCodeConfig{},
+					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+						switch x := incoming.Message.(type) {
+						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
+						case *messages.Wrapper_CommandInitializeTestCase:
+							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
+						case *messages.Wrapper_CommandGenerateSnippet:
+							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
 				)
 			})
 
 			It("runs all test cases at once", func() {
-				maxRunning := 0
-				currentRunning := 0
-				for _, command := range allCommandsSent {
-					if command.Type == dto.CommandTypeInitializeTestCase {
-						currentRunning++
-						if currentRunning > maxRunning {
-							maxRunning = currentRunning
-						}
-					}
-					if command.Type == dto.CommandTypeEvent {
-						if _, ok := command.Event.(*event.TestCaseFinished); ok {
-							currentRunning--
-						}
-					}
-				}
+				maxRunning := determineMaxRunning(allMessagesSent)
 				Expect(maxRunning).To(Equal(5))
 			})
 		})
 	})
 })
 
-func runWithConfigAndResponder(featuresConfig *dto.FeaturesConfig, runtimeConfig *dto.RuntimeConfig, supportCodeConfig *dto.SupportCodeConfig, responder func(chan *dto.Command, *dto.Command)) []*dto.Command {
-	allCommandsSent := []*dto.Command{}
+func determineMaxRunning(allMessagesSent []*messages.Wrapper) int {
+	maxRunning := 0
+	currentRunning := 0
+	for _, msg := range allMessagesSent {
+		if _, ok := msg.Message.(*messages.Wrapper_CommandInitializeTestCase); ok {
+			currentRunning++
+			if currentRunning > maxRunning {
+				maxRunning = currentRunning
+			}
+		}
+		if _, ok := msg.Message.(*messages.Wrapper_TestCaseFinished); ok {
+			currentRunning--
+		}
+	}
+	return maxRunning
+}
+
+func runWithConfigAndResponder(sourcesConfig *messages.SourcesConfig, runtimeConfig *messages.RuntimeConfig, supportCodeConfig *messages.SupportCodeConfig, responder func(chan *messages.Wrapper, *messages.Wrapper)) []*messages.Wrapper {
+	allMessagesSent := []*messages.Wrapper{}
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)
 	go func() {
-		for command := range outgoing {
-			allCommandsSent = append(allCommandsSent, command)
-			responder(incoming, command)
+		for msg := range outgoing {
+			allMessagesSent = append(allMessagesSent, msg)
+			responder(incoming, msg)
 		}
 		done <- true
 	}()
-	incoming <- &dto.Command{
-		Type:              dto.CommandTypeStart,
-		FeaturesConfig:    featuresConfig,
-		RuntimeConfig:     runtimeConfig,
-		SupportCodeConfig: supportCodeConfig,
+	incoming <- &messages.Wrapper{
+		Message: &messages.Wrapper_CommandStart{
+			CommandStart: &messages.CommandStart{
+				SourcesConfig:     sourcesConfig,
+				RuntimeConfig:     runtimeConfig,
+				SupportCodeConfig: supportCodeConfig,
+			},
+		},
 	}
 	<-done
-	return allCommandsSent
+	return allMessagesSent
 }

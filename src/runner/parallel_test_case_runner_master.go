@@ -1,33 +1,31 @@
 package runner
 
 import (
-	"github.com/cucumber/cucumber-engine/src/dto"
-	gherkin "github.com/cucumber/gherkin-go"
+	dto "github.com/cucumber/cucumber-engine/src/dto"
+	messages "github.com/cucumber/cucumber-messages-go/v2"
 	uuid "github.com/satori/go.uuid"
 )
 
 type runNextTestCaseResult struct {
 	err            error
-	testCaseResult *dto.TestResult
+	testCaseResult *messages.TestResult
 }
 
 type parallelTestCaseRunnerMaster struct {
 	baseDirectory               string
-	nextPickleEventIndex        int
-	maxParallel                 int
-	pickleEvents                []*gherkin.PickleEvent
-	runtimeConfig               *dto.RuntimeConfig
-	sendCommand                 func(*dto.Command)
-	sendCommandAndAwaitResponse func(*dto.Command) *dto.Command
+	nextPickleIndex             int
+	pickles                     []*messages.Pickle
+	runtimeConfig               *messages.RuntimeConfig
+	sendCommand                 func(*messages.Wrapper)
+	sendCommandAndAwaitResponse func(*messages.Wrapper) *messages.Wrapper
 	supportCodeLibrary          *SupportCodeLibrary
-	testRunResult               *dto.TestRunResult
 }
 
 func newParallelTestCaseRunnerMaster(opts *runTestCasesOptions) *parallelTestCaseRunnerMaster {
 	return &parallelTestCaseRunnerMaster{
 		baseDirectory:               opts.baseDirectory,
-		nextPickleEventIndex:        0,
-		pickleEvents:                opts.pickleEvents,
+		nextPickleIndex:             0,
+		pickles:                     opts.pickles,
 		runtimeConfig:               opts.runtimeConfig,
 		sendCommand:                 opts.sendCommand,
 		sendCommandAndAwaitResponse: opts.sendCommandAndAwaitResponse,
@@ -35,13 +33,13 @@ func newParallelTestCaseRunnerMaster(opts *runTestCasesOptions) *parallelTestCas
 	}
 }
 
-func (p *parallelTestCaseRunnerMaster) run() (*dto.TestRunResult, error) {
+func (p *parallelTestCaseRunnerMaster) run() (bool, error) {
 	testRunResult := dto.NewTestRunResult()
 	isSkipped := p.runtimeConfig.IsDryRun
 	numRunning := 0
-	toStart := p.runtimeConfig.MaxParallel
-	if toStart == -1 || toStart > len(p.pickleEvents) {
-		toStart = len(p.pickleEvents)
+	toStart := int(p.runtimeConfig.MaxParallel)
+	if toStart == 0 || toStart > len(p.pickles) {
+		toStart = len(p.pickles)
 	}
 	onFinish := make(chan *runNextTestCaseResult, toStart)
 	for i := 1; i <= toStart; i++ {
@@ -51,34 +49,33 @@ func (p *parallelTestCaseRunnerMaster) run() (*dto.TestRunResult, error) {
 	for numRunning > 0 {
 		result := <-onFinish
 		if result.err != nil {
-			return nil, result.err
+			return false, result.err
 		}
 		testRunResult.Update(result.testCaseResult, p.runtimeConfig.IsStrict)
 		if !isSkipped && !testRunResult.Success && p.runtimeConfig.IsFailFast {
 			isSkipped = true
 		}
-		if p.nextPickleEventIndex == len(p.pickleEvents) {
+		if p.nextPickleIndex == len(p.pickles) {
 			numRunning--
 		} else {
 			p.runNextTestCase(isSkipped, onFinish)
 		}
 	}
-	return testRunResult, nil
+	return testRunResult.Success, nil
 }
 
 func (p *parallelTestCaseRunnerMaster) runNextTestCase(isSkipped bool, onFinish chan *runNextTestCaseResult) {
-	pickleEvent := p.pickleEvents[p.nextPickleEventIndex]
-	p.nextPickleEventIndex++
+	pickle := p.pickles[p.nextPickleIndex]
+	p.nextPickleIndex++
 	go func() {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			BaseDirectory:               p.baseDirectory,
 			ID:                          uuid.NewV4().String(),
 			IsSkipped:                   isSkipped,
-			Pickle:                      pickleEvent.Pickle,
+			Pickle:                      pickle,
 			SendCommand:                 p.sendCommand,
 			SendCommandAndAwaitResponse: p.sendCommandAndAwaitResponse,
 			SupportCodeLibrary:          p.supportCodeLibrary,
-			URI:                         pickleEvent.URI,
 		})
 		if err != nil {
 			onFinish <- &runNextTestCaseResult{err: err}

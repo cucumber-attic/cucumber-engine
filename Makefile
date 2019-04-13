@@ -12,19 +12,16 @@ cross-compile:
 	gox -ldflags "-X github.com/cucumber/cucumber-engine/src/cli.version=${CIRCLE_TAG}" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 
 fix-lint:
-	goimports -w src
+	./bin/golangci-lint run --fix -E goimports
+	go mod tidy
 
 lint:
-	goimports -l src
-	gometalinter.v2
+	./bin/golangci-lint run -E goimports
+	go mod verify
 
 setup:
-	go get -u \
-		github.com/Masterminds/glide \
-		gopkg.in/alecthomas/gometalinter.v2 \
-		github.com/onsi/ginkgo/ginkgo
-	glide install
-	gometalinter.v2 --install
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.16.0
+	go get -u github.com/onsi/ginkgo/ginkgo
 
 spec: build lint unit-test
 

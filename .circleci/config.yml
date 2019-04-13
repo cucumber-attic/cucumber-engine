@@ -1,18 +1,16 @@
 defaults:
   job_defaults: &job_defaults
-    working_directory: /go/src/github.com/cucumber/cucumber-engine
     docker:
-      - image: circleci/golang:1.10
-  restore_glide_cache_step: &restore_glide_cache_step
+      - image: circleci/golang:1.11
+  restore_cache_step: &restore_cache_step
     restore_cache:
-        keys:
-          - vendor-{{ checksum "glide.lock" }}
-  save_glide_cache_step: &save_glide_cache_step
+      keys:
+        - go-mod-v1-{{ checksum "go.sum" }}
+  save_glide_cache_step: &save_cache_step
     save_cache:
-        key: vendor-{{ checksum "glide.lock" }}
-        paths:
-          - vendor
-          - ~/.glide
+      key: go-mod-v1-{{ checksum "go.sum" }}
+      paths:
+        - "/go/pkg/mod"
 
 version: 2
 jobs:
@@ -20,18 +18,16 @@ jobs:
     <<: *job_defaults
     steps:
       - checkout
-      - *restore_glide_cache_step
+      - *restore_cache_step
       - run: make setup
-      - *save_glide_cache_step
       - run: make spec
+      - *save_cache_step
 
   deploy:
     <<: *job_defaults
     steps:
       - checkout
-      - *restore_glide_cache_step
-      - run: make setup
-      - *save_glide_cache_step
+      - *restore_cache_step
       - run: make ci-publish-release
 
 workflows:
