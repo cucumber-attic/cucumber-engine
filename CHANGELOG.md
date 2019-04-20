@@ -2,6 +2,11 @@
 
 ### Unreleased
 
+### v0.0.7 (2019-04-20)
+
+* Update cli to read/write delimited messages
+* Generate pickle id for pickle objects
+
 ### v0.0.6 (2019-04-13)
 
 * No consumer facing changes
