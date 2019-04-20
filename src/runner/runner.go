@@ -134,7 +134,6 @@ func (r *Runner) getAcceptedPickles(baseDirectory string, sourcesConfig *message
 	}
 	acceptedPickles := []*messages.Pickle{}
 	for i, gherkinMessage := range gherkinMessages {
-		r.sendCommand(&gherkinMessages[i])
 		switch x := gherkinMessage.Message.(type) {
 		case *messages.Wrapper_Attachment:
 			uri, err := filepath.Rel(baseDirectory, x.Attachment.Source.Uri)
@@ -144,6 +143,8 @@ func (r *Runner) getAcceptedPickles(baseDirectory string, sourcesConfig *message
 			return nil, fmt.Errorf("Parse error in '%s': %s", uri, x.Attachment.Data)
 		case *messages.Wrapper_Pickle:
 			pickle := x.Pickle
+			pickle.Id = uuid.NewV4().String()
+			r.sendCommand(&gherkinMessages[i])
 			if pickleFilter.Matches(pickle) {
 				r.sendCommand(&messages.Wrapper{
 					Message: &messages.Wrapper_PickleAccepted{
@@ -158,6 +159,8 @@ func (r *Runner) getAcceptedPickles(baseDirectory string, sourcesConfig *message
 					},
 				})
 			}
+		default:
+			r.sendCommand(&gherkinMessages[i])
 		}
 	}
 	if sourcesConfig.Order.Type == messages.SourcesOrderType_RANDOM {

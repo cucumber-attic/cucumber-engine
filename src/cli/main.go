@@ -1,14 +1,15 @@
 package cli
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
+	"io"
+	"math"
 	"os"
 
 	"github.com/cucumber/cucumber-engine/src/runner"
 	messages "github.com/cucumber/cucumber-messages-go/v2"
-	"github.com/gogo/protobuf/proto"
+	protobufio "github.com/gogo/protobuf/io"
 )
 
 var version string
@@ -26,32 +27,31 @@ func Execute() {
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)
 	go func() {
+		writer := protobufio.NewDelimitedWriter(os.Stdout)
 		for command := range outgoing {
-			data, err := proto.Marshal(command)
+			if *debugFlag {
+				fmt.Fprintf(os.Stderr, "cucumber-engine OUT: %+v\n", command)
+			}
+			err := writer.WriteMsg(command)
 			if err != nil {
 				panic(err)
 			}
-			if *debugFlag {
-				fmt.Fprintf(os.Stderr, "cucumber-engine OUT: %s\n", string(data))
-			}
-			os.Stdout.Write(append(data, []byte("\n")...))
 		}
 		done <- true
 	}()
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
+	reader := protobufio.NewDelimitedReader(os.Stdin, math.MaxInt32)
+	for {
 		command := &messages.Wrapper{}
-		data := scanner.Bytes()
-		if *debugFlag {
-			fmt.Fprintf(os.Stderr, "CPR IN: %s\n", string(data))
-		}
-		if err := proto.Unmarshal(data, command); err != nil {
+		err := reader.ReadMsg(command)
+		if err == io.EOF {
+			break
+		} else if err != nil {
 			panic(err)
 		}
+		if *debugFlag {
+			fmt.Fprintf(os.Stderr, "cucumber-engine IN: %+v\n", command)
+		}
 		incoming <- command
-	}
-	if err := scanner.Err(); err != nil {
-		panic(err)
 	}
 	<-done
 }
