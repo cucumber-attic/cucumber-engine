@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	cucumberexpressions "github.com/cucumber/cucumber-expressions-go"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 )
 
 // GetExpression returns the cucumber expression this pattern defines

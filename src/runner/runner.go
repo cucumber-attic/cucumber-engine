@@ -7,26 +7,26 @@ import (
 	"sync"
 
 	"github.com/cucumber/cucumber-engine/src/dto"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	gherkin "github.com/cucumber/gherkin-go"
 	uuid "github.com/satori/go.uuid"
 )
 
 // Runner executes a run of cucumber
 type Runner struct {
-	incomingCommands     chan *messages.Wrapper
-	outgoingCommands     chan *messages.Wrapper
+	incomingCommands     chan *messages.Envelope
+	outgoingCommands     chan *messages.Envelope
 	responseChannelMutex sync.RWMutex
-	responseChannels     map[string]chan *messages.Wrapper
+	responseChannels     map[string]chan *messages.Envelope
 	result               *dto.TestRunResult
 }
 
 // NewRunner creates a runner
 func NewRunner() *Runner {
 	r := &Runner{
-		incomingCommands: make(chan *messages.Wrapper),
-		outgoingCommands: make(chan *messages.Wrapper),
-		responseChannels: map[string]chan *messages.Wrapper{},
+		incomingCommands: make(chan *messages.Envelope),
+		outgoingCommands: make(chan *messages.Envelope),
+		responseChannels: map[string]chan *messages.Envelope{},
 		result:           dto.NewTestRunResult(),
 	}
 	go func() {
@@ -38,15 +38,15 @@ func NewRunner() *Runner {
 }
 
 // GetCommandChannels returns the command channels
-func (r *Runner) GetCommandChannels() (chan *messages.Wrapper, chan *messages.Wrapper) {
+func (r *Runner) GetCommandChannels() (chan *messages.Envelope, chan *messages.Envelope) {
 	return r.incomingCommands, r.outgoingCommands
 }
 
-func (r *Runner) receiveCommand(command *messages.Wrapper) {
+func (r *Runner) receiveCommand(command *messages.Envelope) {
 	switch x := command.Message.(type) {
-	case *messages.Wrapper_CommandStart:
+	case *messages.Envelope_CommandStart:
 		r.start(x.CommandStart)
-	case *messages.Wrapper_CommandActionComplete:
+	case *messages.Envelope_CommandActionComplete:
 		r.responseChannelMutex.RLock()
 		if responseChannel, ok := r.responseChannels[x.CommandActionComplete.GetCompletedId()]; ok {
 			responseChannel <- command
@@ -55,13 +55,13 @@ func (r *Runner) receiveCommand(command *messages.Wrapper) {
 	}
 }
 
-func (r *Runner) sendCommand(command *messages.Wrapper) {
+func (r *Runner) sendCommand(command *messages.Envelope) {
 	r.outgoingCommands <- command
 }
 
 func (r *Runner) sendError(err error) {
-	r.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_CommandError{
+	r.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_CommandError{
 			CommandError: err.Error(),
 		},
 	})
@@ -78,14 +78,14 @@ func (r *Runner) start(command *messages.CommandStart) {
 		r.sendError(err)
 		return
 	}
-	r.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestRunStarted{
+	r.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestRunStarted{
 			TestRunStarted: &messages.TestRunStarted{},
 		},
 	})
 	if len(acceptedPickles) > 0 {
-		_ = r.sendCommandAndAwaitResponse(&messages.Wrapper{
-			Message: &messages.Wrapper_CommandRunBeforeTestRunHooks{
+		_ = r.sendCommandAndAwaitResponse(&messages.Envelope{
+			Message: &messages.Envelope_CommandRunBeforeTestRunHooks{
 				CommandRunBeforeTestRunHooks: &messages.CommandRunBeforeTestRunHooks{},
 			},
 		})
@@ -109,14 +109,14 @@ func (r *Runner) start(command *messages.CommandStart) {
 		return
 	}
 	if len(acceptedPickles) > 0 {
-		_ = r.sendCommandAndAwaitResponse(&messages.Wrapper{
-			Message: &messages.Wrapper_CommandRunAfterTestRunHooks{
+		_ = r.sendCommandAndAwaitResponse(&messages.Envelope{
+			Message: &messages.Envelope_CommandRunAfterTestRunHooks{
 				CommandRunAfterTestRunHooks: &messages.CommandRunAfterTestRunHooks{},
 			},
 		})
 	}
-	r.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestRunFinished{
+	r.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestRunFinished{
 			TestRunFinished: &messages.TestRunFinished{Success: testRunResult},
 		},
 	})
@@ -135,26 +135,26 @@ func (r *Runner) getAcceptedPickles(baseDirectory string, sourcesConfig *message
 	acceptedPickles := []*messages.Pickle{}
 	for i, gherkinMessage := range gherkinMessages {
 		switch x := gherkinMessage.Message.(type) {
-		case *messages.Wrapper_Attachment:
+		case *messages.Envelope_Attachment:
 			uri, err := filepath.Rel(baseDirectory, x.Attachment.Source.Uri)
 			if err != nil {
 				return nil, err
 			}
 			return nil, fmt.Errorf("Parse error in '%s': %s", uri, x.Attachment.Data)
-		case *messages.Wrapper_Pickle:
+		case *messages.Envelope_Pickle:
 			pickle := x.Pickle
 			pickle.Id = uuid.NewV4().String()
 			r.sendCommand(&gherkinMessages[i])
 			if pickleFilter.Matches(pickle) {
-				r.sendCommand(&messages.Wrapper{
-					Message: &messages.Wrapper_PickleAccepted{
+				r.sendCommand(&messages.Envelope{
+					Message: &messages.Envelope_PickleAccepted{
 						PickleAccepted: &messages.PickleAccepted{PickleId: pickle.Id},
 					},
 				})
 				acceptedPickles = append(acceptedPickles, pickle)
 			} else {
-				r.sendCommand(&messages.Wrapper{
-					Message: &messages.Wrapper_PickleRejected{
+				r.sendCommand(&messages.Envelope{
+					Message: &messages.Envelope_PickleRejected{
 						PickleRejected: &messages.PickleRejected{PickleId: pickle.Id},
 					},
 				})
@@ -169,25 +169,25 @@ func (r *Runner) getAcceptedPickles(baseDirectory string, sourcesConfig *message
 	return acceptedPickles, nil
 }
 
-func (r *Runner) sendCommandAndAwaitResponse(command *messages.Wrapper) *messages.Wrapper {
+func (r *Runner) sendCommandAndAwaitResponse(command *messages.Envelope) *messages.Envelope {
 	id := uuid.NewV4().String()
 	switch x := command.Message.(type) {
-	case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+	case *messages.Envelope_CommandRunBeforeTestRunHooks:
 		x.CommandRunBeforeTestRunHooks.ActionId = id
-	case *messages.Wrapper_CommandRunAfterTestRunHooks:
+	case *messages.Envelope_CommandRunAfterTestRunHooks:
 		x.CommandRunAfterTestRunHooks.ActionId = id
-	case *messages.Wrapper_CommandInitializeTestCase:
+	case *messages.Envelope_CommandInitializeTestCase:
 		x.CommandInitializeTestCase.ActionId = id
-	case *messages.Wrapper_CommandRunBeforeTestCaseHook:
+	case *messages.Envelope_CommandRunBeforeTestCaseHook:
 		x.CommandRunBeforeTestCaseHook.ActionId = id
-	case *messages.Wrapper_CommandRunAfterTestCaseHook:
+	case *messages.Envelope_CommandRunAfterTestCaseHook:
 		x.CommandRunAfterTestCaseHook.ActionId = id
-	case *messages.Wrapper_CommandRunTestStep:
+	case *messages.Envelope_CommandRunTestStep:
 		x.CommandRunTestStep.ActionId = id
-	case *messages.Wrapper_CommandGenerateSnippet:
+	case *messages.Envelope_CommandGenerateSnippet:
 		x.CommandGenerateSnippet.ActionId = id
 	}
-	responseChannel := make(chan *messages.Wrapper)
+	responseChannel := make(chan *messages.Envelope)
 	r.responseChannelMutex.Lock()
 	r.responseChannels[id] = responseChannel
 	r.responseChannelMutex.Unlock()

@@ -1,9 +1,9 @@
 module github.com/cucumber/cucumber-engine
 
 require (
-	github.com/cucumber/cucumber-expressions-go v6.2.0+incompatible
-	github.com/cucumber/cucumber-messages-go/v2 v2.1.1
-	github.com/cucumber/gherkin-go v0.0.0-20181031235610-f732235a1dbe
+	github.com/cucumber/cucumber-expressions-go v0.0.0-20190520094527-6bf122a7df69
+	github.com/cucumber/cucumber-messages-go/v3 v3.0.0
+	github.com/cucumber/gherkin-go v0.0.0-20190605210851-678357df2cd9
 	github.com/cucumber/tag-expressions-go v0.0.0-20181031233154-abafd42c3c9f
 	github.com/gogo/protobuf v1.2.1
 	github.com/mattn/go-runewidth v0.0.2 // indirect

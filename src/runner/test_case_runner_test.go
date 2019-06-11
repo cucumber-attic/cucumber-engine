@@ -2,33 +2,33 @@ package runner_test
 
 import (
 	"github.com/cucumber/cucumber-engine/src/runner"
-	helpers "github.com/cucumber/cucumber-engine/test/helpers"
+	"github.com/cucumber/cucumber-engine/test/helpers"
 	. "github.com/cucumber/cucumber-engine/test/matchers"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("TestCaseRunner", func() {
 	Context("with a passing step", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var pickle *messages.Pickle
 		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(command *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(command *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, command)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				switch x := incoming.Message.(type) {
-				case *messages.Wrapper_CommandRunTestStep:
+				case *messages.Envelope_CommandRunTestStep:
 					return helpers.CreateActionCompleteMessageWithTestResult(
 						x.CommandRunTestStep.ActionId,
 						&messages.TestResult{
 							DurationNanoseconds: 9,
-							Status:              messages.Status_PASSED,
+							Status:              messages.TestResult_PASSED,
 						},
 					)
 				default:
@@ -53,7 +53,7 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			pickle = &messages.Pickle{
 				Locations: []*messages.Location{{Line: 1}},
-				Steps: []*messages.PickleStep{
+				Steps: []*messages.Pickle_PickleStep{
 					{
 						Locations: []*messages.Location{{Line: 2}},
 						Text:      "I have 100 cukes",
@@ -75,7 +75,7 @@ var _ = Describe("TestCaseRunner", func() {
 		It("returns a passing result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
 				DurationNanoseconds: 9,
-				Status:              messages.Status_PASSED,
+				Status:              messages.TestResult_PASSED,
 			}))
 		})
 
@@ -84,8 +84,8 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case prepared event command", func() {
-			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCasePrepared{
+			Expect(allMessagesSent[0]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCasePrepared{
 					TestCasePrepared: &messages.TestCasePrepared{
 						PickleId: "",
 						Steps: []*messages.TestCasePreparedStep{
@@ -106,8 +106,8 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case started event command", func() {
-			Expect(allMessagesSent[1]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCaseStarted{
+			Expect(allMessagesSent[1]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCaseStarted{
 					TestCaseStarted: &messages.TestCaseStarted{
 						PickleId: "",
 					},
@@ -116,19 +116,18 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the initialize test case command", func() {
-			Expect(allMessagesSent[2]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_CommandInitializeTestCase{
+			Expect(allMessagesSent[2]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_CommandInitializeTestCase{
 					CommandInitializeTestCase: &messages.CommandInitializeTestCase{
-						TestCaseId: "testCase1",
-						Pickle:     pickle,
+						Pickle: pickle,
 					},
 				},
 			}))
 		})
 
 		It("sends the test step started event commands", func() {
-			Expect(allMessagesSent[3]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepStarted{
+			Expect(allMessagesSent[3]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepStarted{
 					TestStepStarted: &messages.TestStepStarted{
 						PickleId: "",
 						Index:    0,
@@ -138,10 +137,9 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the run test step command", func() {
-			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_CommandRunTestStep{
+			Expect(allMessagesSent[4]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_CommandRunTestStep{
 					CommandRunTestStep: &messages.CommandRunTestStep{
-						TestCaseId:       "testCase1",
 						StepDefinitionId: "step1",
 						PatternMatches: []*messages.PatternMatch{
 							{
@@ -155,14 +153,14 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command", func() {
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						PickleId: "",
 						Index:    0,
 						TestResult: &messages.TestResult{
 							DurationNanoseconds: 9,
-							Status:              messages.Status_PASSED,
+							Status:              messages.TestResult_PASSED,
 						},
 					},
 				},
@@ -170,13 +168,13 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command", func() {
-			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCaseFinished{
+			Expect(allMessagesSent[6]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCaseFinished{
 					TestCaseFinished: &messages.TestCaseFinished{
 						PickleId: "",
 						TestResult: &messages.TestResult{
 							DurationNanoseconds: 9,
-							Status:              messages.Status_PASSED,
+							Status:              messages.TestResult_PASSED,
 						},
 					},
 				},
@@ -185,22 +183,22 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a failing step", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				switch x := incoming.Message.(type) {
-				case *messages.Wrapper_CommandRunTestStep:
+				case *messages.Envelope_CommandRunTestStep:
 					return helpers.CreateActionCompleteMessageWithTestResult(
 						x.CommandRunTestStep.ActionId,
 						&messages.TestResult{
-							Status:              messages.Status_FAILED,
+							Status:              messages.TestResult_FAILED,
 							DurationNanoseconds: 8,
 							Message:             "error message and stacktrace",
 						},
@@ -229,7 +227,7 @@ var _ = Describe("TestCaseRunner", func() {
 				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -247,7 +245,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a failing result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status:              messages.Status_FAILED,
+				Status:              messages.TestResult_FAILED,
 				DurationNanoseconds: 8,
 				Message:             "error message and stacktrace",
 			}))
@@ -265,13 +263,13 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status failed", func() {
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						PickleId: "",
 						Index:    0,
 						TestResult: &messages.TestResult{
-							Status:              messages.Status_FAILED,
+							Status:              messages.TestResult_FAILED,
 							DurationNanoseconds: 8,
 							Message:             "error message and stacktrace",
 						},
@@ -281,12 +279,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command with status failed", func() {
-			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCaseFinished{
+			Expect(allMessagesSent[6]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCaseFinished{
 					TestCaseFinished: &messages.TestCaseFinished{
 						PickleId: "",
 						TestResult: &messages.TestResult{
-							Status:              messages.Status_FAILED,
+							Status:              messages.TestResult_FAILED,
 							DurationNanoseconds: 8,
 							Message:             "error message and stacktrace",
 						},
@@ -297,18 +295,18 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a ambiguous step", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 		expectedMessage := "Multiple step definitions match:\n" +
 			"  'I have {int} cukes'   - /path/to/steps:3  \n" +
 			`  '^I have (\d+) cukes$' - /path/to/steps:4  ` + "\n"
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				return helpers.CreateActionCompleteMessage("")
 			}
@@ -343,7 +341,7 @@ var _ = Describe("TestCaseRunner", func() {
 				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -361,7 +359,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a ambiguous result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status:  messages.Status_AMBIGUOUS,
+				Status:  messages.TestResult_AMBIGUOUS,
 				Message: expectedMessage,
 			}))
 		})
@@ -377,8 +375,8 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case prepared event command without an action location", func() {
-			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCasePrepared{
+			Expect(allMessagesSent[0]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCasePrepared{
 					TestCasePrepared: &messages.TestCasePrepared{
 						PickleId: "",
 						Steps: []*messages.TestCasePreparedStep{
@@ -395,13 +393,13 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command", func() {
-			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[4]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						PickleId: "",
 						Index:    0,
 						TestResult: &messages.TestResult{
-							Status:  messages.Status_AMBIGUOUS,
+							Status:  messages.TestResult_AMBIGUOUS,
 							Message: expectedMessage,
 						},
 					},
@@ -410,12 +408,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command", func() {
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCaseFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCaseFinished{
 					TestCaseFinished: &messages.TestCaseFinished{
 						PickleId: "",
 						TestResult: &messages.TestResult{
-							Status:  messages.Status_AMBIGUOUS,
+							Status:  messages.TestResult_AMBIGUOUS,
 							Message: expectedMessage,
 						},
 					},
@@ -425,15 +423,15 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a ambiguous step and base directory", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				return helpers.CreateActionCompleteMessage("")
 			}
@@ -469,7 +467,7 @@ var _ = Describe("TestCaseRunner", func() {
 				ID:            "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -487,7 +485,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a ambiguous result with the paths ", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status: messages.Status_AMBIGUOUS,
+				Status: messages.TestResult_AMBIGUOUS,
 				Message: "Multiple step definitions match:\n" +
 					"  'I have {int} cukes'   - path/to/steps:3  \n" +
 					`  '^I have (\d+) cukes$' - path/to/steps:4  ` + "\n",
@@ -506,19 +504,19 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a undefined step", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 		var snippet = "snippet line1\nsnippet line2\nsnippet line3"
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				switch x := incoming.Message.(type) {
-				case *messages.Wrapper_CommandGenerateSnippet:
+				case *messages.Envelope_CommandGenerateSnippet:
 					return helpers.CreateActionCompleteMessageWithSnippet(
 						x.CommandGenerateSnippet.ActionId,
 						snippet,
@@ -533,7 +531,7 @@ var _ = Describe("TestCaseRunner", func() {
 				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -551,7 +549,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a undefined result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status:  messages.Status_UNDEFINED,
+				Status:  messages.TestResult_UNDEFINED,
 				Message: snippet,
 			}))
 		})
@@ -568,8 +566,8 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case prepared event command without an action location", func() {
-			Expect(allMessagesSent[0]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCasePrepared{
+			Expect(allMessagesSent[0]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCasePrepared{
 					TestCasePrepared: &messages.TestCasePrepared{
 						PickleId: "",
 						Steps: []*messages.TestCasePreparedStep{
@@ -586,8 +584,8 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the generate snippet command", func() {
-			Expect(allMessagesSent[4]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_CommandGenerateSnippet{
+			Expect(allMessagesSent[4]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_CommandGenerateSnippet{
 					CommandGenerateSnippet: &messages.CommandGenerateSnippet{
 						GeneratedExpressions: []*messages.GeneratedExpression{
 							{
@@ -601,12 +599,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status undefined", func() {
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						Index: 0,
 						TestResult: &messages.TestResult{
-							Status:  messages.Status_UNDEFINED,
+							Status:  messages.TestResult_UNDEFINED,
 							Message: snippet,
 						},
 					},
@@ -615,11 +613,11 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test case finished event command with status undefined", func() {
-			Expect(allMessagesSent[6]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestCaseFinished{
+			Expect(allMessagesSent[6]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestCaseFinished{
 					TestCaseFinished: &messages.TestCaseFinished{
 						TestResult: &messages.TestResult{
-							Status:  messages.Status_UNDEFINED,
+							Status:  messages.TestResult_UNDEFINED,
 							Message: snippet,
 						},
 					},
@@ -629,22 +627,22 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("with a failing and then skipped step", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				switch x := incoming.Message.(type) {
-				case *messages.Wrapper_CommandRunTestStep:
+				case *messages.Envelope_CommandRunTestStep:
 					return helpers.CreateActionCompleteMessageWithTestResult(
 						x.CommandRunTestStep.ActionId,
 						&messages.TestResult{
-							Status:              messages.Status_FAILED,
+							Status:              messages.TestResult_FAILED,
 							DurationNanoseconds: 8,
 							Message:             "error message and stacktrace",
 						},
@@ -673,7 +671,7 @@ var _ = Describe("TestCaseRunner", func() {
 				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -695,7 +693,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a failing result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status:              messages.Status_FAILED,
+				Status:              messages.TestResult_FAILED,
 				DurationNanoseconds: 8,
 				Message:             "error message and stacktrace",
 			}))
@@ -715,12 +713,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the second step", func() {
-			Expect(allMessagesSent[7]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[7]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						Index: 1,
 						TestResult: &messages.TestResult{
-							Status: messages.Status_SKIPPED,
+							Status: messages.TestResult_SKIPPED,
 						},
 					},
 				},
@@ -729,15 +727,15 @@ var _ = Describe("TestCaseRunner", func() {
 	})
 
 	Context("isSkipped is true (fail fast or dry run)", func() {
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 		var result *messages.TestResult
 
 		BeforeEach(func() {
-			allMessagesSent = []*messages.Wrapper{}
-			sendCommand := func(incoming *messages.Wrapper) {
+			allMessagesSent = []*messages.Envelope{}
+			sendCommand := func(incoming *messages.Envelope) {
 				allMessagesSent = append(allMessagesSent, incoming)
 			}
-			sendCommandAndAwaitResponse := func(incoming *messages.Wrapper) *messages.Wrapper {
+			sendCommandAndAwaitResponse := func(incoming *messages.Envelope) *messages.Envelope {
 				sendCommand(incoming)
 				return helpers.CreateActionCompleteMessage("")
 			}
@@ -780,7 +778,7 @@ var _ = Describe("TestCaseRunner", func() {
 				IsSkipped: true,
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{
 							Locations: []*messages.Location{{Line: 2}},
 							Text:      "I have 100 cukes",
@@ -798,7 +796,7 @@ var _ = Describe("TestCaseRunner", func() {
 
 		It("returns a skipped result", func() {
 			Expect(result).To(Equal(&messages.TestResult{
-				Status: messages.Status_SKIPPED,
+				Status: messages.TestResult_SKIPPED,
 			}))
 		})
 
@@ -816,12 +814,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the before hook", func() {
-			Expect(allMessagesSent[3]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[3]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						Index: 0,
 						TestResult: &messages.TestResult{
-							Status: messages.Status_SKIPPED,
+							Status: messages.TestResult_SKIPPED,
 						},
 					},
 				},
@@ -829,12 +827,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the step", func() {
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						Index: 1,
 						TestResult: &messages.TestResult{
-							Status: messages.Status_SKIPPED,
+							Status: messages.TestResult_SKIPPED,
 						},
 					},
 				},
@@ -842,12 +840,12 @@ var _ = Describe("TestCaseRunner", func() {
 		})
 
 		It("sends the test step finished event command with status skipped for the after hook", func() {
-			Expect(allMessagesSent[7]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestStepFinished{
+			Expect(allMessagesSent[7]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestStepFinished{
 					TestStepFinished: &messages.TestStepFinished{
 						Index: 2,
 						TestResult: &messages.TestResult{
-							Status: messages.Status_SKIPPED,
+							Status: messages.TestResult_SKIPPED,
 						},
 					},
 				},

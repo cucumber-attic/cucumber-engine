@@ -2,7 +2,7 @@ package runner_test
 
 import (
 	"github.com/cucumber/cucumber-engine/src/runner"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +15,7 @@ var _ = Describe("PickleFilter", func() {
 		BeforeEach(func() {
 			pickle = &messages.Pickle{
 				Name:      "",
-				Tags:      []*messages.PickleTag{},
+				Tags:      []*messages.Pickle_PickleTag{},
 				Locations: []*messages.Location{},
 				Uri:       "",
 			}
@@ -180,7 +180,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has tag", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}}
 					})
 
 					It("returns true", func() {
@@ -208,7 +208,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has tag", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}}
 					})
 
 					It("returns false", func() {
@@ -236,7 +236,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has both tags", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}, {Name: "@tagB"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}, {Name: "@tagB"}}
 					})
 
 					It("returns true", func() {
@@ -246,7 +246,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has the first tag but not the second", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}}
 					})
 
 					It("returns false", func() {
@@ -256,7 +256,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has the second tag but not the first", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagB"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagB"}}
 					})
 
 					It("returns false", func() {
@@ -284,7 +284,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has both tags", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}, {Name: "@tagB"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}, {Name: "@tagB"}}
 					})
 
 					It("returns true", func() {
@@ -294,7 +294,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has the first tag but not the second", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}}
 					})
 
 					It("returns true", func() {
@@ -304,7 +304,7 @@ var _ = Describe("PickleFilter", func() {
 
 				Describe("pickle has the second tag but not the first", func() {
 					BeforeEach(func() {
-						pickle.Tags = []*messages.PickleTag{{Name: "@tagB"}}
+						pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagB"}}
 					})
 
 					It("returns true", func() {
@@ -341,7 +341,7 @@ var _ = Describe("PickleFilter", func() {
 					pickle.Uri = "features/b.feature"
 					pickle.Locations = []*messages.Location{{Line: 1}}
 					pickle.Name = "nameA descriptionA"
-					pickle.Tags = []*messages.PickleTag{{Name: "@tagA"}}
+					pickle.Tags = []*messages.Pickle_PickleTag{{Name: "@tagA"}}
 				})
 
 				It("returns true", func() {

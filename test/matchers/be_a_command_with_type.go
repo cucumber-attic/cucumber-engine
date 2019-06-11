@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 )
 
-// BeAMessageOfType is a matcher that validates a *message.Wrapper's message type
+// BeAMessageOfType is a matcher that validates a *message.Envelope's message type
 func BeAMessageOfType(expected interface{}) types.GomegaMatcher {
 	return &messageOfTypeMatcher{
 		expectedType: reflect.TypeOf(expected),
@@ -21,58 +21,58 @@ type messageOfTypeMatcher struct {
 }
 
 func (m *messageOfTypeMatcher) Match(actual interface{}) (success bool, err error) {
-	msg, ok := actual.(*messages.Wrapper)
+	msg, ok := actual.(*messages.Envelope)
 	if !ok {
-		return false, fmt.Errorf("BeACommandWithType matcher expects a *messages.Wrapper.  Got:\n%s", format.Object(actual, 1))
+		return false, fmt.Errorf("BeACommandWithType matcher expects a *messages.Envelope.  Got:\n%s", format.Object(actual, 1))
 	}
 
 	var actualInner interface{}
 	switch x := msg.Message.(type) {
-	case *messages.Wrapper_Source:
+	case *messages.Envelope_Source:
 		actualInner = x.Source
-	case *messages.Wrapper_GherkinDocument:
+	case *messages.Envelope_GherkinDocument:
 		actualInner = x.GherkinDocument
-	case *messages.Wrapper_Pickle:
+	case *messages.Envelope_Pickle:
 		actualInner = x.Pickle
-	case *messages.Wrapper_Attachment:
+	case *messages.Envelope_Attachment:
 		actualInner = x.Attachment
-	case *messages.Wrapper_TestCaseStarted:
+	case *messages.Envelope_TestCaseStarted:
 		actualInner = x.TestCaseStarted
-	case *messages.Wrapper_TestStepStarted:
+	case *messages.Envelope_TestStepStarted:
 		actualInner = x.TestStepStarted
-	case *messages.Wrapper_TestStepFinished:
+	case *messages.Envelope_TestStepFinished:
 		actualInner = x.TestStepFinished
-	case *messages.Wrapper_TestCaseFinished:
+	case *messages.Envelope_TestCaseFinished:
 		actualInner = x.TestCaseFinished
-	case *messages.Wrapper_PickleAccepted:
+	case *messages.Envelope_PickleAccepted:
 		actualInner = x.PickleAccepted
-	case *messages.Wrapper_PickleRejected:
+	case *messages.Envelope_PickleRejected:
 		actualInner = x.PickleRejected
-	case *messages.Wrapper_TestCasePrepared:
+	case *messages.Envelope_TestCasePrepared:
 		actualInner = x.TestCasePrepared
-	case *messages.Wrapper_TestRunStarted:
+	case *messages.Envelope_TestRunStarted:
 		actualInner = x.TestRunStarted
-	case *messages.Wrapper_TestRunFinished:
+	case *messages.Envelope_TestRunFinished:
 		actualInner = x.TestRunFinished
-	case *messages.Wrapper_CommandStart:
+	case *messages.Envelope_CommandStart:
 		actualInner = x.CommandStart
-	case *messages.Wrapper_CommandActionComplete:
+	case *messages.Envelope_CommandActionComplete:
 		actualInner = x.CommandActionComplete
-	case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+	case *messages.Envelope_CommandRunBeforeTestRunHooks:
 		actualInner = x.CommandRunBeforeTestRunHooks
-	case *messages.Wrapper_CommandInitializeTestCase:
+	case *messages.Envelope_CommandInitializeTestCase:
 		actualInner = x.CommandInitializeTestCase
-	case *messages.Wrapper_CommandRunBeforeTestCaseHook:
+	case *messages.Envelope_CommandRunBeforeTestCaseHook:
 		actualInner = x.CommandRunBeforeTestCaseHook
-	case *messages.Wrapper_CommandRunTestStep:
+	case *messages.Envelope_CommandRunTestStep:
 		actualInner = x.CommandRunTestStep
-	case *messages.Wrapper_CommandRunAfterTestCaseHook:
+	case *messages.Envelope_CommandRunAfterTestCaseHook:
 		actualInner = x.CommandRunAfterTestCaseHook
-	case *messages.Wrapper_CommandRunAfterTestRunHooks:
+	case *messages.Envelope_CommandRunAfterTestRunHooks:
 		actualInner = x.CommandRunAfterTestRunHooks
-	case *messages.Wrapper_CommandGenerateSnippet:
+	case *messages.Envelope_CommandGenerateSnippet:
 		actualInner = x.CommandGenerateSnippet
-	case *messages.Wrapper_CommandError:
+	case *messages.Envelope_CommandError:
 		actualInner = x.CommandError
 	default:
 		panic(fmt.Errorf("Unexpected message type: %v", msg))

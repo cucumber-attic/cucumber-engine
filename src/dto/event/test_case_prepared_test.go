@@ -3,7 +3,7 @@ package event_test
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/dto/event"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,7 +23,7 @@ var _ = Describe("NewTestCasePrepared", func() {
 			testCasePrepared := event.NewTestCasePrepared(event.NewTestCasePreparedOptions{
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{Locations: []*messages.Location{{Line: 2}}},
 					},
 					Uri: "a.feature",
@@ -48,7 +48,7 @@ var _ = Describe("NewTestCasePrepared", func() {
 			testCasePrepared := event.NewTestCasePrepared(event.NewTestCasePreparedOptions{
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{Locations: []*messages.Location{{Line: 2}}},
 					},
 					Uri: "a.feature",
@@ -86,7 +86,7 @@ var _ = Describe("NewTestCasePrepared", func() {
 			testCasePrepared := event.NewTestCasePrepared(event.NewTestCasePreparedOptions{
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{Locations: []*messages.Location{{Line: 2}}},
 					},
 					Uri: "a.feature",
@@ -128,7 +128,7 @@ var _ = Describe("NewTestCasePrepared", func() {
 			testCasePrepared := event.NewTestCasePrepared(event.NewTestCasePreparedOptions{
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
-					Steps: []*messages.PickleStep{
+					Steps: []*messages.Pickle_PickleStep{
 						{Locations: []*messages.Location{{Line: 2}}},
 					},
 					Uri: "a.feature",

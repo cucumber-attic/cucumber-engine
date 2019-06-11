@@ -5,7 +5,7 @@ import (
 
 	"github.com/cucumber/cucumber-engine/src/dto"
 	"github.com/cucumber/cucumber-engine/src/dto/event"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 )
 
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
@@ -13,8 +13,8 @@ type NewTestCaseRunnerOptions struct {
 	BaseDirectory               string
 	ID                          string
 	Pickle                      *messages.Pickle
-	SendCommand                 func(*messages.Wrapper)
-	SendCommandAndAwaitResponse func(*messages.Wrapper) *messages.Wrapper
+	SendCommand                 func(*messages.Envelope)
+	SendCommandAndAwaitResponse func(*messages.Envelope) *messages.Envelope
 	SupportCodeLibrary          *SupportCodeLibrary
 	IsSkipped                   bool
 }
@@ -27,8 +27,8 @@ type TestCaseRunner struct {
 	id                            string
 	isSkipped                     bool
 	pickle                        *messages.Pickle
-	sendCommand                   func(*messages.Wrapper)
-	sendCommandAndAwaitResponse   func(*messages.Wrapper) *messages.Wrapper
+	sendCommand                   func(*messages.Envelope)
+	sendCommandAndAwaitResponse   func(*messages.Envelope) *messages.Envelope
 	stepIndexToStepDefinitions    [][]*dto.StepDefinition
 	stepIndexToPatternMatches     [][]*messages.PatternMatch
 	supportCodeLibrary            *SupportCodeLibrary
@@ -53,9 +53,9 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 	for i, tag := range opts.Pickle.Tags {
 		tagNames[i] = tag.Name
 	}
-	initialStatus := messages.Status_PASSED
+	initialStatus := messages.TestResult_PASSED
 	if opts.IsSkipped {
-		initialStatus = messages.Status_SKIPPED
+		initialStatus = messages.TestResult_SKIPPED
 	}
 	return &TestCaseRunner{
 		afterTestCaseHookDefinitions:  opts.SupportCodeLibrary.GetMatchingAfterTestCaseHookDefinitions(tagNames),
@@ -81,11 +81,10 @@ func (t *TestCaseRunner) Run() *messages.TestResult {
 	t.sendTestCasePreparedEvent()
 	t.sendTestCaseStartedEvent()
 	if !t.isSkipped {
-		t.sendCommandAndAwaitResponse(&messages.Wrapper{
-			Message: &messages.Wrapper_CommandInitializeTestCase{
+		t.sendCommandAndAwaitResponse(&messages.Envelope{
+			Message: &messages.Envelope_CommandInitializeTestCase{
 				CommandInitializeTestCase: &messages.CommandInitializeTestCase{
-					TestCaseId: t.id,
-					Pickle:     t.pickle,
+					Pickle: t.pickle,
 				},
 			},
 		})
@@ -112,16 +111,16 @@ func (t *TestCaseRunner) updateResult(hookOrStepResult *messages.TestResult) {
 
 func (t *TestCaseRunner) shouldUpdateResultStatus(hookOrStepResult *messages.TestResult) bool {
 	switch hookOrStepResult.Status {
-	case messages.Status_FAILED, messages.Status_AMBIGUOUS:
-		return t.result.Status != messages.Status_FAILED && t.result.Status != messages.Status_AMBIGUOUS
+	case messages.TestResult_FAILED, messages.TestResult_AMBIGUOUS:
+		return t.result.Status != messages.TestResult_FAILED && t.result.Status != messages.TestResult_AMBIGUOUS
 	default:
-		return t.result.Status == messages.Status_PASSED || t.result.Status == messages.Status_SKIPPED
+		return t.result.Status == messages.TestResult_PASSED || t.result.Status == messages.TestResult_SKIPPED
 	}
 }
 
 func (t *TestCaseRunner) sendTestStepStartedEvent(index int) {
-	t.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestStepStarted{
+	t.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestStepStarted{
 			TestStepStarted: &messages.TestStepStarted{
 				PickleId: t.pickle.Id,
 				Index:    uint32(index),
@@ -131,8 +130,8 @@ func (t *TestCaseRunner) sendTestStepStartedEvent(index int) {
 }
 
 func (t *TestCaseRunner) sendTestStepFinishedEvent(index int, result *messages.TestResult) {
-	t.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestStepFinished{
+	t.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestStepFinished{
 			TestStepFinished: &messages.TestStepFinished{
 				PickleId:   t.pickle.Id,
 				Index:      uint32(index),
@@ -143,8 +142,8 @@ func (t *TestCaseRunner) sendTestStepFinishedEvent(index int, result *messages.T
 }
 
 func (t *TestCaseRunner) sendTestCaseFinishedEvent() {
-	t.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestCaseFinished{
+	t.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestCaseFinished{
 			TestCaseFinished: &messages.TestCaseFinished{
 				PickleId:   t.pickle.Id,
 				TestResult: t.result,
@@ -154,8 +153,8 @@ func (t *TestCaseRunner) sendTestCaseFinishedEvent() {
 }
 
 func (t *TestCaseRunner) sendTestCasePreparedEvent() {
-	t.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestCasePrepared{
+	t.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestCasePrepared{
 			TestCasePrepared: event.NewTestCasePrepared(event.NewTestCasePreparedOptions{
 				AfterTestCaseHookDefinitions:  t.afterTestCaseHookDefinitions,
 				BeforeTestCaseHookDefinitions: t.beforeTestCaseHookDefinitions,
@@ -167,8 +166,8 @@ func (t *TestCaseRunner) sendTestCasePreparedEvent() {
 }
 
 func (t *TestCaseRunner) sendTestCaseStartedEvent() {
-	t.sendCommand(&messages.Wrapper{
-		Message: &messages.Wrapper_TestCaseStarted{
+	t.sendCommand(&messages.Envelope{
+		Message: &messages.Envelope_TestCaseStarted{
 			TestCaseStarted: &messages.TestCaseStarted{
 				PickleId: t.pickle.Id,
 			},
@@ -192,22 +191,22 @@ func (t *TestCaseRunner) getRunHookAndStepFuncs() []func() *messages.TestResult 
 
 func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeHook bool) func() *messages.TestResult {
 	return func() *messages.TestResult {
-		if t.isSkipped || (isBeforeHook && t.result.Status != messages.Status_PASSED) {
-			return &messages.TestResult{Status: messages.Status_SKIPPED}
+		if t.isSkipped || (isBeforeHook && t.result.Status != messages.TestResult_PASSED) {
+			return &messages.TestResult{Status: messages.TestResult_SKIPPED}
 		}
-		command := &messages.Wrapper{
-			Message: &messages.Wrapper_CommandRunBeforeTestCaseHook{
+		command := &messages.Envelope{
+			Message: &messages.Envelope_CommandRunBeforeTestCaseHook{
 				CommandRunBeforeTestCaseHook: &messages.CommandRunBeforeTestCaseHook{
-					TestCaseId:               t.id,
+					PickleId:                 t.pickle.Id,
 					TestCaseHookDefinitionId: hook.Config.Id,
 				},
 			},
 		}
 		if !isBeforeHook {
-			command = &messages.Wrapper{
-				Message: &messages.Wrapper_CommandRunAfterTestCaseHook{
+			command = &messages.Envelope{
+				Message: &messages.Envelope_CommandRunAfterTestCaseHook{
 					CommandRunAfterTestCaseHook: &messages.CommandRunAfterTestCaseHook{
-						TestCaseId:               t.id,
+						PickleId:                 t.pickle.Id,
 						TestCaseHookDefinitionId: hook.Config.Id,
 					},
 				},
@@ -215,7 +214,7 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 		}
 		response := t.sendCommandAndAwaitResponse(command)
 		switch x := response.Message.(type) {
-		case *messages.Wrapper_CommandActionComplete:
+		case *messages.Envelope_CommandActionComplete:
 			switch y := x.CommandActionComplete.Result.(type) {
 			case *messages.CommandActionComplete_TestResult:
 				return y.TestResult
@@ -225,7 +224,7 @@ func (t *TestCaseRunner) runHookFunc(hook *dto.TestCaseHookDefinition, isBeforeH
 	}
 }
 
-func (t *TestCaseRunner) runStepFunc(stepIndex int, step *messages.PickleStep) func() *messages.TestResult {
+func (t *TestCaseRunner) runStepFunc(stepIndex int, step *messages.Pickle_PickleStep) func() *messages.TestResult {
 	return func() *messages.TestResult {
 		if len(t.stepIndexToStepDefinitions[stepIndex]) == 0 {
 			return t.getSnippetTestResult(step)
@@ -233,29 +232,29 @@ func (t *TestCaseRunner) runStepFunc(stepIndex int, step *messages.PickleStep) f
 		if len(t.stepIndexToStepDefinitions[stepIndex]) > 1 {
 			message, err := getAmbiguousStepDefinitionsMessage(t.stepIndexToStepDefinitions[stepIndex], t.baseDirectory)
 			if err != nil {
-				t.sendCommand(&messages.Wrapper{
-					Message: &messages.Wrapper_CommandError{
+				t.sendCommand(&messages.Envelope{
+					Message: &messages.Envelope_CommandError{
 						CommandError: err.Error(),
 					},
 				})
 			}
 			return &messages.TestResult{
-				Status:  messages.Status_AMBIGUOUS,
+				Status:  messages.TestResult_AMBIGUOUS,
 				Message: message,
 			}
 		}
-		if t.result.Status != messages.Status_PASSED {
-			return &messages.TestResult{Status: messages.Status_SKIPPED}
+		if t.result.Status != messages.TestResult_PASSED {
+			return &messages.TestResult{Status: messages.TestResult_SKIPPED}
 		}
 		return t.getRunStepTestResult(stepIndex, step)
 	}
 }
 
-func (t *TestCaseRunner) getRunStepTestResult(stepIndex int, step *messages.PickleStep) *messages.TestResult {
+func (t *TestCaseRunner) getRunStepTestResult(stepIndex int, step *messages.Pickle_PickleStep) *messages.TestResult {
 	command := t.getRunStepCommand(stepIndex, step)
 	response := t.sendCommandAndAwaitResponse(command)
 	switch x := response.Message.(type) {
-	case *messages.Wrapper_CommandActionComplete:
+	case *messages.Envelope_CommandActionComplete:
 		switch y := x.CommandActionComplete.Result.(type) {
 		case *messages.CommandActionComplete_TestResult:
 			return y.TestResult
@@ -264,28 +263,28 @@ func (t *TestCaseRunner) getRunStepTestResult(stepIndex int, step *messages.Pick
 	panic(fmt.Sprintf("Received unexpected response (%v) to generate snippe command (%v)", response, command))
 }
 
-func (t *TestCaseRunner) getRunStepCommand(stepIndex int, step *messages.PickleStep) *messages.Wrapper {
+func (t *TestCaseRunner) getRunStepCommand(stepIndex int, step *messages.Pickle_PickleStep) *messages.Envelope {
 	commandRunTestStep := &messages.CommandRunTestStep{
-		TestCaseId:       t.id,
+		PickleId:         t.pickle.Id,
 		StepDefinitionId: t.stepIndexToStepDefinitions[stepIndex][0].Config.Id,
 		PatternMatches:   t.stepIndexToPatternMatches[stepIndex],
 	}
-	return &messages.Wrapper{
-		Message: &messages.Wrapper_CommandRunTestStep{
+	return &messages.Envelope{
+		Message: &messages.Envelope_CommandRunTestStep{
 			CommandRunTestStep: commandRunTestStep,
 		},
 	}
 }
 
-func (t *TestCaseRunner) getSnippetTestResult(step *messages.PickleStep) *messages.TestResult {
+func (t *TestCaseRunner) getSnippetTestResult(step *messages.Pickle_PickleStep) *messages.TestResult {
 	command := t.getGenerateSnippetCommand(step)
 	response := t.sendCommandAndAwaitResponse(command)
 	switch x := response.Message.(type) {
-	case *messages.Wrapper_CommandActionComplete:
+	case *messages.Envelope_CommandActionComplete:
 		switch y := x.CommandActionComplete.Result.(type) {
 		case *messages.CommandActionComplete_Snippet:
 			return &messages.TestResult{
-				Status:  messages.Status_UNDEFINED,
+				Status:  messages.TestResult_UNDEFINED,
 				Message: y.Snippet,
 			}
 		}
@@ -293,24 +292,28 @@ func (t *TestCaseRunner) getSnippetTestResult(step *messages.PickleStep) *messag
 	panic(fmt.Sprintf("Received unexpected response (%v) to generate snippe command (%v)", response, command))
 }
 
-func (t *TestCaseRunner) getGenerateSnippetCommand(step *messages.PickleStep) *messages.Wrapper {
+func (t *TestCaseRunner) getGenerateSnippetCommand(step *messages.Pickle_PickleStep) *messages.Envelope {
 	commandGenerateSnippet := &messages.CommandGenerateSnippet{
 		GeneratedExpressions: t.supportCodeLibrary.GenerateExpressions(step.Text),
 	}
 	if step.Argument != nil {
-		switch x := step.Argument.(type) {
-		case *messages.PickleStep_DataTable:
-			commandGenerateSnippet.PickleArgument = &messages.CommandGenerateSnippet_DataTable{
-				DataTable: x.DataTable,
+		switch x := step.Argument.Message.(type) {
+		case *messages.PickleStepArgument_DataTable:
+			commandGenerateSnippet.PickleStepArgument = &messages.PickleStepArgument{
+				Message: &messages.PickleStepArgument_DataTable{
+					DataTable: x.DataTable,
+				},
 			}
-		case *messages.PickleStep_DocString:
-			commandGenerateSnippet.PickleArgument = &messages.CommandGenerateSnippet_DocString{
-				DocString: x.DocString,
+		case *messages.PickleStepArgument_DocString:
+			commandGenerateSnippet.PickleStepArgument = &messages.PickleStepArgument{
+				Message: &messages.PickleStepArgument_DocString{
+					DocString: x.DocString,
+				},
 			}
 		}
 	}
-	return &messages.Wrapper{
-		Message: &messages.Wrapper_CommandGenerateSnippet{
+	return &messages.Envelope{
+		Message: &messages.Envelope_CommandGenerateSnippet{
 			CommandGenerateSnippet: commandGenerateSnippet,
 		},
 	}

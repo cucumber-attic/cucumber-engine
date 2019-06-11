@@ -3,7 +3,7 @@ package runner
 import (
 	"regexp"
 
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	tagexpressions "github.com/cucumber/tag-expressions-go"
 )
 

@@ -2,7 +2,7 @@ package event
 
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 )
 
 // NewTestCasePreparedOptions are the options for NewTestCasePrepared

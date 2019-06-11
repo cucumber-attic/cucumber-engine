@@ -3,7 +3,7 @@ package runner
 import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -11,8 +11,8 @@ type runTestCasesOptions struct {
 	baseDirectory               string
 	pickles                     []*messages.Pickle
 	runtimeConfig               *messages.RuntimeConfig
-	sendCommand                 func(*messages.Wrapper)
-	sendCommandAndAwaitResponse func(*messages.Wrapper) *messages.Wrapper
+	sendCommand                 func(*messages.Envelope)
+	sendCommandAndAwaitResponse func(*messages.Envelope) *messages.Envelope
 	supportCodeLibrary          *SupportCodeLibrary
 }
 

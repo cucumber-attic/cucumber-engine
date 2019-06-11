@@ -2,7 +2,7 @@ package runner_test
 
 import (
 	"github.com/cucumber/cucumber-engine/src/runner"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
