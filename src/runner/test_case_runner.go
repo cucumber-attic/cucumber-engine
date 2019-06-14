@@ -297,20 +297,7 @@ func (t *TestCaseRunner) getGenerateSnippetCommand(step *messages.Pickle_PickleS
 		GeneratedExpressions: t.supportCodeLibrary.GenerateExpressions(step.Text),
 	}
 	if step.Argument != nil {
-		switch x := step.Argument.Message.(type) {
-		case *messages.PickleStepArgument_DataTable:
-			commandGenerateSnippet.PickleStepArgument = &messages.PickleStepArgument{
-				Message: &messages.PickleStepArgument_DataTable{
-					DataTable: x.DataTable,
-				},
-			}
-		case *messages.PickleStepArgument_DocString:
-			commandGenerateSnippet.PickleStepArgument = &messages.PickleStepArgument{
-				Message: &messages.PickleStepArgument_DocString{
-					DocString: x.DocString,
-				},
-			}
-		}
+		commandGenerateSnippet.PickleStepArgument = step.Argument
 	}
 	return &messages.Envelope{
 		Message: &messages.Envelope_CommandGenerateSnippet{
