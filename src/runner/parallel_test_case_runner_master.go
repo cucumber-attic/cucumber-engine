@@ -3,7 +3,6 @@ package runner
 import (
 	dto "github.com/cucumber/cucumber-engine/src/dto"
 	messages "github.com/cucumber/cucumber-messages-go/v3"
-	uuid "github.com/satori/go.uuid"
 )
 
 type runNextTestCaseResult struct {
@@ -70,7 +69,6 @@ func (p *parallelTestCaseRunnerMaster) runNextTestCase(isSkipped bool, onFinish 
 	go func() {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			BaseDirectory:               p.baseDirectory,
-			ID:                          uuid.NewV4().String(),
 			IsSkipped:                   isSkipped,
 			Pickle:                      pickle,
 			SendCommand:                 p.sendCommand,

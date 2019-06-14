@@ -62,7 +62,6 @@ var _ = Describe("TestCaseRunner", func() {
 				Uri: "/path/to/feature",
 			}
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID:                          "testCase1",
 				Pickle:                      pickle,
 				SendCommand:                 sendCommand,
 				SendCommandAndAwaitResponse: sendCommandAndAwaitResponse,
@@ -224,7 +223,6 @@ var _ = Describe("TestCaseRunner", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
 					Steps: []*messages.Pickle_PickleStep{
@@ -338,7 +336,6 @@ var _ = Describe("TestCaseRunner", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
 					Steps: []*messages.Pickle_PickleStep{
@@ -464,7 +461,6 @@ var _ = Describe("TestCaseRunner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
 				BaseDirectory: "/path/to/base",
-				ID:            "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
 					Steps: []*messages.Pickle_PickleStep{
@@ -528,7 +524,6 @@ var _ = Describe("TestCaseRunner", func() {
 			supportCodeLibrary, err := runner.NewSupportCodeLibrary(&messages.SupportCodeConfig{})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
 					Steps: []*messages.Pickle_PickleStep{
@@ -668,7 +663,6 @@ var _ = Describe("TestCaseRunner", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID: "testCase1",
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},
 					Steps: []*messages.Pickle_PickleStep{
@@ -774,7 +768,6 @@ var _ = Describe("TestCaseRunner", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testCaseRunner, err := runner.NewTestCaseRunner(&runner.NewTestCaseRunnerOptions{
-				ID:        "testCase1",
 				IsSkipped: true,
 				Pickle: &messages.Pickle{
 					Locations: []*messages.Location{{Line: 1}},

@@ -4,7 +4,6 @@ import (
 	"github.com/cucumber/cucumber-engine/src/dto"
 
 	messages "github.com/cucumber/cucumber-messages-go/v3"
-	uuid "github.com/satori/go.uuid"
 )
 
 type runTestCasesOptions struct {
@@ -29,7 +28,6 @@ func RunTestCasesSequentially(opts *runTestCasesOptions) (bool, error) {
 	for _, pickle := range opts.pickles {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			BaseDirectory:               opts.baseDirectory,
-			ID:                          uuid.NewV4().String(),
 			IsSkipped:                   isSkipped,
 			Pickle:                      pickle,
 			SendCommand:                 opts.sendCommand,

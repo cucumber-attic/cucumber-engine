@@ -11,7 +11,6 @@ import (
 // NewTestCaseRunnerOptions are the options for NewTestCaseRunner
 type NewTestCaseRunnerOptions struct {
 	BaseDirectory               string
-	ID                          string
 	Pickle                      *messages.Pickle
 	SendCommand                 func(*messages.Envelope)
 	SendCommandAndAwaitResponse func(*messages.Envelope) *messages.Envelope
@@ -24,7 +23,6 @@ type TestCaseRunner struct {
 	afterTestCaseHookDefinitions  []*dto.TestCaseHookDefinition
 	baseDirectory                 string
 	beforeTestCaseHookDefinitions []*dto.TestCaseHookDefinition
-	id                            string
 	isSkipped                     bool
 	pickle                        *messages.Pickle
 	sendCommand                   func(*messages.Envelope)
@@ -61,7 +59,6 @@ func NewTestCaseRunner(opts *NewTestCaseRunnerOptions) (*TestCaseRunner, error) 
 		afterTestCaseHookDefinitions:  opts.SupportCodeLibrary.GetMatchingAfterTestCaseHookDefinitions(tagNames),
 		baseDirectory:                 opts.BaseDirectory,
 		beforeTestCaseHookDefinitions: opts.SupportCodeLibrary.GetMatchingBeforeTestCaseHookDefinitions(tagNames),
-		id:                            opts.ID,
 		isSkipped:                     opts.IsSkipped,
 		pickle:                        opts.Pickle,
 		result: &messages.TestResult{
