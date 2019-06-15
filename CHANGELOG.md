@@ -2,6 +2,10 @@
 
 ### Unreleased
 
+### v0.0.8 (2019-06-15)
+
+* Update to cucumber-message v3
+
 ### v0.0.7 (2019-04-20)
 
 * Update cli to read/write delimited messages
