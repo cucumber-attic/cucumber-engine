@@ -1,13 +1,13 @@
 package helpers
 
 import (
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 )
 
 // CreateActionCompleteMessage returns a CommandActionComplete message for the given actionID
-func CreateActionCompleteMessage(actionID string) *messages.Wrapper {
-	return &messages.Wrapper{
-		Message: &messages.Wrapper_CommandActionComplete{
+func CreateActionCompleteMessage(actionID string) *messages.Envelope {
+	return &messages.Envelope{
+		Message: &messages.Envelope_CommandActionComplete{
 			CommandActionComplete: &messages.CommandActionComplete{
 				CompletedId: actionID,
 			},
@@ -16,9 +16,9 @@ func CreateActionCompleteMessage(actionID string) *messages.Wrapper {
 }
 
 // CreateActionCompleteMessageWithSnippet returns a CommandActionComplete message for the given actionID and snippet
-func CreateActionCompleteMessageWithSnippet(actionID string, snippet string) *messages.Wrapper {
-	return &messages.Wrapper{
-		Message: &messages.Wrapper_CommandActionComplete{
+func CreateActionCompleteMessageWithSnippet(actionID string, snippet string) *messages.Envelope {
+	return &messages.Envelope{
+		Message: &messages.Envelope_CommandActionComplete{
 			CommandActionComplete: &messages.CommandActionComplete{
 				CompletedId: actionID,
 				Result: &messages.CommandActionComplete_Snippet{
@@ -30,9 +30,9 @@ func CreateActionCompleteMessageWithSnippet(actionID string, snippet string) *me
 }
 
 // CreateActionCompleteMessageWithTestResult returns a CommandActionComplete message for the given actionID and test result
-func CreateActionCompleteMessageWithTestResult(actionID string, testResult *messages.TestResult) *messages.Wrapper {
-	return &messages.Wrapper{
-		Message: &messages.Wrapper_CommandActionComplete{
+func CreateActionCompleteMessageWithTestResult(actionID string, testResult *messages.TestResult) *messages.Envelope {
+	return &messages.Envelope{
+		Message: &messages.Envelope_CommandActionComplete{
 			CommandActionComplete: &messages.CommandActionComplete{
 				CompletedId: actionID,
 				Result: &messages.CommandActionComplete_TestResult{

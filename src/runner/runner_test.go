@@ -8,7 +8,7 @@ import (
 	"github.com/cucumber/cucumber-engine/src/runner"
 	helpers "github.com/cucumber/cucumber-engine/test/helpers"
 	. "github.com/cucumber/cucumber-engine/test/matchers"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -21,7 +21,7 @@ var _ = Describe("Runner", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
 
 		Context("all steps are undefined", func() {
-			var allMessagesSent []*messages.Wrapper
+			var allMessagesSent []*messages.Envelope
 
 			BeforeEach(func() {
 				allMessagesSent = runWithConfigAndResponder(
@@ -35,15 +35,15 @@ var _ = Describe("Runner", func() {
 						MaxParallel: 1,
 					},
 					&messages.SupportCodeConfig{},
-					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+					func(commandChan chan *messages.Envelope, incoming *messages.Envelope) {
 						switch x := incoming.Message.(type) {
-						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+						case *messages.Envelope_CommandRunBeforeTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+						case *messages.Envelope_CommandRunAfterTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandInitializeTestCase:
+						case *messages.Envelope_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
-						case *messages.Wrapper_CommandGenerateSnippet:
+						case *messages.Envelope_CommandGenerateSnippet:
 							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
@@ -72,8 +72,8 @@ var _ = Describe("Runner", func() {
 				Expect(allMessagesSent[17]).To(BeAMessageOfType(&messages.TestStepFinished{}))
 				Expect(allMessagesSent[18]).To(BeAMessageOfType(&messages.TestCaseFinished{}))
 				Expect(allMessagesSent[19]).To(BeAMessageOfType(&messages.CommandRunAfterTestRunHooks{}))
-				Expect(allMessagesSent[20]).To(Equal(&messages.Wrapper{
-					Message: &messages.Wrapper_TestRunFinished{
+				Expect(allMessagesSent[20]).To(Equal(&messages.Envelope{
+					Message: &messages.Envelope_TestRunFinished{
 						TestRunFinished: &messages.TestRunFinished{
 							Success: false,
 						},
@@ -85,7 +85,7 @@ var _ = Describe("Runner", func() {
 
 	Context("all pickles gets rejected", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "a.feature")
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 
 		BeforeEach(func() {
 			allMessagesSent = runWithConfigAndResponder(
@@ -99,7 +99,7 @@ var _ = Describe("Runner", func() {
 				},
 				&messages.RuntimeConfig{},
 				&messages.SupportCodeConfig{},
-				func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {},
+				func(commandChan chan *messages.Envelope, incoming *messages.Envelope) {},
 			)
 		})
 
@@ -110,8 +110,8 @@ var _ = Describe("Runner", func() {
 			Expect(allMessagesSent[2]).To(BeAMessageOfType(&messages.Pickle{}))
 			Expect(allMessagesSent[3]).To(BeAMessageOfType(&messages.PickleRejected{}))
 			Expect(allMessagesSent[4]).To(BeAMessageOfType(&messages.TestRunStarted{}))
-			Expect(allMessagesSent[5]).To(Equal(&messages.Wrapper{
-				Message: &messages.Wrapper_TestRunFinished{
+			Expect(allMessagesSent[5]).To(Equal(&messages.Envelope{
+				Message: &messages.Envelope_TestRunFinished{
 					TestRunFinished: &messages.TestRunFinished{
 						Success: true,
 					},
@@ -122,7 +122,7 @@ var _ = Describe("Runner", func() {
 
 	Context("with test case hooks", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "tags.feature")
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 
 		BeforeEach(func() {
 			allMessagesSent = runWithConfigAndResponder(
@@ -171,19 +171,19 @@ var _ = Describe("Runner", func() {
 						},
 					},
 				},
-				func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+				func(commandChan chan *messages.Envelope, incoming *messages.Envelope) {
 					switch x := incoming.Message.(type) {
-					case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+					case *messages.Envelope_CommandRunBeforeTestRunHooks:
 						commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
-					case *messages.Wrapper_CommandRunAfterTestRunHooks:
+					case *messages.Envelope_CommandRunAfterTestRunHooks:
 						commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
-					case *messages.Wrapper_CommandInitializeTestCase:
+					case *messages.Envelope_CommandInitializeTestCase:
 						commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
-					case *messages.Wrapper_CommandRunBeforeTestCaseHook:
-						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunBeforeTestCaseHook.ActionId, &messages.TestResult{Status: messages.Status_PASSED})
-					case *messages.Wrapper_CommandRunAfterTestCaseHook:
-						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunAfterTestCaseHook.ActionId, &messages.TestResult{Status: messages.Status_PASSED})
-					case *messages.Wrapper_CommandGenerateSnippet:
+					case *messages.Envelope_CommandRunBeforeTestCaseHook:
+						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunBeforeTestCaseHook.ActionId, &messages.TestResult{Status: messages.TestResult_PASSED})
+					case *messages.Envelope_CommandRunAfterTestCaseHook:
+						commandChan <- helpers.CreateActionCompleteMessageWithTestResult(x.CommandRunAfterTestCaseHook.ActionId, &messages.TestResult{Status: messages.TestResult_FAILED})
+					case *messages.Envelope_CommandGenerateSnippet:
 						commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 					}
 				},
@@ -193,7 +193,7 @@ var _ = Describe("Runner", func() {
 		It("runs test case hooks only for pickles that match the tag expression", func() {
 			testCasePreparedMessages := []*messages.TestCasePrepared{}
 			for _, msg := range allMessagesSent {
-				if wrapper, ok := msg.Message.(*messages.Wrapper_TestCasePrepared); ok {
+				if wrapper, ok := msg.Message.(*messages.Envelope_TestCasePrepared); ok {
 					testCasePreparedMessages = append(testCasePreparedMessages, wrapper.TestCasePrepared)
 				}
 			}
@@ -261,7 +261,7 @@ var _ = Describe("Runner", func() {
 
 	Context("running in parallel with three pickles", func() {
 		featurePath := path.Join(rootDir, "test", "fixtures", "many.feature")
-		var allMessagesSent []*messages.Wrapper
+		var allMessagesSent []*messages.Envelope
 
 		Context("maxParallel is 2", func() {
 			BeforeEach(func() {
@@ -276,15 +276,15 @@ var _ = Describe("Runner", func() {
 						MaxParallel: 2,
 					},
 					&messages.SupportCodeConfig{},
-					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+					func(commandChan chan *messages.Envelope, incoming *messages.Envelope) {
 						switch x := incoming.Message.(type) {
-						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+						case *messages.Envelope_CommandRunBeforeTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+						case *messages.Envelope_CommandRunAfterTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandInitializeTestCase:
+						case *messages.Envelope_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
-						case *messages.Wrapper_CommandGenerateSnippet:
+						case *messages.Envelope_CommandGenerateSnippet:
 							commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
 						}
 					},
@@ -310,15 +310,15 @@ var _ = Describe("Runner", func() {
 						MaxParallel: 0,
 					},
 					&messages.SupportCodeConfig{},
-					func(commandChan chan *messages.Wrapper, incoming *messages.Wrapper) {
+					func(commandChan chan *messages.Envelope, incoming *messages.Envelope) {
 						switch x := incoming.Message.(type) {
-						case *messages.Wrapper_CommandRunBeforeTestRunHooks:
+						case *messages.Envelope_CommandRunBeforeTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunBeforeTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandRunAfterTestRunHooks:
+						case *messages.Envelope_CommandRunAfterTestRunHooks:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandRunAfterTestRunHooks.ActionId)
-						case *messages.Wrapper_CommandInitializeTestCase:
+						case *messages.Envelope_CommandInitializeTestCase:
 							commandChan <- helpers.CreateActionCompleteMessage(x.CommandInitializeTestCase.ActionId)
-						case *messages.Wrapper_CommandGenerateSnippet:
+						case *messages.Envelope_CommandGenerateSnippet:
 							go func() {
 								time.Sleep(time.Second)
 								commandChan <- helpers.CreateActionCompleteMessageWithSnippet(x.CommandGenerateSnippet.ActionId, "snippet")
@@ -336,25 +336,25 @@ var _ = Describe("Runner", func() {
 	})
 })
 
-func determineMaxRunning(allMessagesSent []*messages.Wrapper) int {
+func determineMaxRunning(allMessagesSent []*messages.Envelope) int {
 	maxRunning := 0
 	currentRunning := 0
 	for _, msg := range allMessagesSent {
-		if _, ok := msg.Message.(*messages.Wrapper_CommandInitializeTestCase); ok {
+		if _, ok := msg.Message.(*messages.Envelope_CommandInitializeTestCase); ok {
 			currentRunning++
 			if currentRunning > maxRunning {
 				maxRunning = currentRunning
 			}
 		}
-		if _, ok := msg.Message.(*messages.Wrapper_TestCaseFinished); ok {
+		if _, ok := msg.Message.(*messages.Envelope_TestCaseFinished); ok {
 			currentRunning--
 		}
 	}
 	return maxRunning
 }
 
-func runWithConfigAndResponder(sourcesConfig *messages.SourcesConfig, runtimeConfig *messages.RuntimeConfig, supportCodeConfig *messages.SupportCodeConfig, responder func(chan *messages.Wrapper, *messages.Wrapper)) []*messages.Wrapper {
-	allMessagesSent := []*messages.Wrapper{}
+func runWithConfigAndResponder(sourcesConfig *messages.SourcesConfig, runtimeConfig *messages.RuntimeConfig, supportCodeConfig *messages.SupportCodeConfig, responder func(chan *messages.Envelope, *messages.Envelope)) []*messages.Envelope {
+	allMessagesSent := []*messages.Envelope{}
 	r := runner.NewRunner()
 	incoming, outgoing := r.GetCommandChannels()
 	done := make(chan bool)
@@ -365,8 +365,8 @@ func runWithConfigAndResponder(sourcesConfig *messages.SourcesConfig, runtimeCon
 		}
 		done <- true
 	}()
-	incoming <- &messages.Wrapper{
-		Message: &messages.Wrapper_CommandStart{
+	incoming <- &messages.Envelope{
+		Message: &messages.Envelope_CommandStart{
 			CommandStart: &messages.CommandStart{
 				SourcesConfig:     sourcesConfig,
 				RuntimeConfig:     runtimeConfig,

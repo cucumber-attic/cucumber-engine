@@ -2,8 +2,7 @@ package runner
 
 import (
 	dto "github.com/cucumber/cucumber-engine/src/dto"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
-	uuid "github.com/satori/go.uuid"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 )
 
 type runNextTestCaseResult struct {
@@ -16,8 +15,8 @@ type parallelTestCaseRunnerMaster struct {
 	nextPickleIndex             int
 	pickles                     []*messages.Pickle
 	runtimeConfig               *messages.RuntimeConfig
-	sendCommand                 func(*messages.Wrapper)
-	sendCommandAndAwaitResponse func(*messages.Wrapper) *messages.Wrapper
+	sendCommand                 func(*messages.Envelope)
+	sendCommandAndAwaitResponse func(*messages.Envelope) *messages.Envelope
 	supportCodeLibrary          *SupportCodeLibrary
 }
 
@@ -70,7 +69,6 @@ func (p *parallelTestCaseRunnerMaster) runNextTestCase(isSkipped bool, onFinish 
 	go func() {
 		testCaseRunner, err := NewTestCaseRunner(&NewTestCaseRunnerOptions{
 			BaseDirectory:               p.baseDirectory,
-			ID:                          uuid.NewV4().String(),
 			IsSkipped:                   isSkipped,
 			Pickle:                      pickle,
 			SendCommand:                 p.sendCommand,

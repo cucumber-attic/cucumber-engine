@@ -1,6 +1,6 @@
 package dto
 
-import messages "github.com/cucumber/cucumber-messages-go/v2"
+import messages "github.com/cucumber/cucumber-messages-go/v3"
 
 // TestRunResult is the result of a test run
 type TestRunResult struct {
@@ -21,9 +21,9 @@ func (t *TestRunResult) Update(testCaseResult *messages.TestResult, isStrict boo
 	}
 }
 
-func shouldCauseFailure(status messages.Status, isStrict bool) bool {
-	return status == messages.Status_AMBIGUOUS ||
-		status == messages.Status_FAILED ||
-		status == messages.Status_UNDEFINED ||
-		(status == messages.Status_PENDING && isStrict)
+func shouldCauseFailure(status messages.TestResult_Status, isStrict bool) bool {
+	return status == messages.TestResult_AMBIGUOUS ||
+		status == messages.TestResult_FAILED ||
+		status == messages.TestResult_UNDEFINED ||
+		(status == messages.TestResult_PENDING && isStrict)
 }

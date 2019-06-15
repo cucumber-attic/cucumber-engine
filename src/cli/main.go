@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/cucumber/cucumber-engine/src/runner"
-	messages "github.com/cucumber/cucumber-messages-go/v2"
+	messages "github.com/cucumber/cucumber-messages-go/v3"
 	protobufio "github.com/gogo/protobuf/io"
 )
 
@@ -41,7 +41,7 @@ func Execute() {
 	}()
 	reader := protobufio.NewDelimitedReader(os.Stdin, math.MaxInt32)
 	for {
-		command := &messages.Wrapper{}
+		command := &messages.Envelope{}
 		err := reader.ReadMsg(command)
 		if err == io.EOF {
 			break
